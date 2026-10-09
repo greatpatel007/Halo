@@ -12,6 +12,9 @@ import com.halo.core.model.ThemeMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -21,7 +24,7 @@ import javax.inject.Singleton
 /**
  * Stores the choice in DataStore (source of truth) and applies it through the platform's per-app night mode
  * ([UiModeManager.setApplicationNightMode]), so the splash screen, system bars, resources and Compose all
- * switch together — no flash of the wrong theme on launch.
+ * switch together â€” no flash of the wrong theme on launch.
  */
 @Singleton
 internal class PlatformAppearanceRepository @Inject constructor(
@@ -30,19 +33,26 @@ internal class PlatformAppearanceRepository @Inject constructor(
     @ApplicationScope scope: CoroutineScope,
 ) : AppearanceRepository {
 
-    override val themeMode: Flow<ThemeMode> = preferences.data.map { prefs ->
+    private val stored: Flow<ThemeMode> = preferences.data.map { prefs ->
         prefs[THEME_MODE]?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } } ?: ThemeMode.System
     }
 
-    // Declared after themeMode: initializers run top to bottom.
+    /** The latest choice, emitted before the disk write completes (it takes ~200ms) so the UI responds at once. */
+    private val chosen = MutableStateFlow<ThemeMode?>(null)
+
+    override val themeMode: Flow<ThemeMode> =
+        combine(stored, chosen) { stored, chosen -> chosen ?: stored }.distinctUntilChanged()
+
+    // Declared after stored: initializers run top to bottom.
     init {
         // The platform persists the per-app night mode itself; re-applying keeps it in sync with DataStore.
-        scope.launch { apply(themeMode.first()) }
+        scope.launch { apply(stored.first()) }
     }
 
     override suspend fun setThemeMode(mode: ThemeMode) {
-        preferences.edit { it[THEME_MODE] = mode.name }
+        chosen.value = mode
         apply(mode)
+        preferences.edit { it[THEME_MODE] = mode.name }
     }
 
     private fun apply(mode: ThemeMode) {

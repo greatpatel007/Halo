@@ -20,15 +20,15 @@ class HaloEffects(
     /** Opacity of disabled components. */
     val disabledAlpha: Float = 0.38f,
     /** Tide (theme transition): width of the smeared band either side of the wave front. */
-    val tideBand: Dp = 140.dp,
+    val tideBand: Dp = 80.dp,
     /** Tide: half-width of the sand dissolve at the front. */
-    val tideDissolve: Dp = 14.dp,
+    val tideDissolve: Dp = 10.dp,
     /** Tide: sand grain size. */
     val tideGrain: Dp = 1.dp,
     /** Tide: how far the front meanders (water). */
     val tideAmplitude: Dp = 28.dp,
     /** Tide: longest directional smear, at the front. */
-    val tideSmear: Dp = 36.dp,
+    val tideSmear: Dp = 20.dp,
 )
 
 /** Light ceramic shows grain more readily than soft-touch black, so it gets less. */

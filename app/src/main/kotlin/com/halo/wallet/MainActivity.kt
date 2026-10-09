@@ -9,7 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.halo.feature.showroom.debug.ShowroomDebugCommands
 import com.halo.feature.showroom.debug.ShowroomDebugHost
@@ -30,15 +31,15 @@ class MainActivity : ComponentActivity() {
             intent = Intent(launch).apply { flags = flags and Intent.FLAG_ACTIVITY_NEW_TASK.inv() }
         }
         forwardParams(intent)
+        // Transparent bars once. The theme switches in place (configChanges="uiMode"), and the bar icons follow
+        // it from HaloThemeRevealHost, which flips them only when the tide washes over each bar.
+        val style = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
         setContent {
-            // The theme switches in place (configChanges="uiMode"): re-style the system bars with it.
-            val dark = isSystemInDarkTheme()
-            DisposableEffect(dark) {
-                val style = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark }
-                enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
-                onDispose { }
-            }
-            ShowroomDebugHost {
+            // Follow the stored choice immediately, so a theme switch (and its tide) responds on the next frame
+            // instead of waiting for the platform's uiMode configuration change.
+            val override by viewModel.darkOverride.collectAsStateWithLifecycle()
+            ShowroomDebugHost(dark = override ?: isSystemInDarkTheme()) {
                 HaloNavHost()
             }
         }

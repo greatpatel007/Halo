@@ -41,7 +41,7 @@ class AppearanceViewModel @Inject constructor(
 
 /**
  * The app's appearance switch (decision D2): a Large [HaloToggle] whose value is the current theme. Flipping it
- * runs the circular theme reveal from the switch itself.
+ * runs the Tide theme transition, growing from the switch itself.
  */
 @Composable
 internal fun AppearanceSwitch(

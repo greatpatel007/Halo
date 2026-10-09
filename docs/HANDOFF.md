@@ -1,68 +1,73 @@
 # Handoff: where work stopped (2026-10-09)
 
-Last commit on `main`: `896363a` (pushed). Everything below is **uncommitted, on disk only**.
+Last commit on `main`: the Tide theme transition, polished and moved onto spring physics (pushed).
 
-## In progress: "Tide" theme transition (replaces the circular reveal)
+## Tide theme transition: done, fine-tuning later
 
-Request: on the theme toggle, a full-screen wave sweeps across the screen, like the iPhone Duo's fold-open
-animation. It turns the screen light or dark as it moves. The wave should have a sand-like structure and
-grain, and move like water. It is shader-driven.
+On the theme toggle, a full-screen AGSL wave with a sand texture sweeps across the screen
+(`foundation/material/TideShader.kt`, `foundation/ThemeReveal.kt`). Verified on the emulator at 1× and 5×, in both
+directions, including a mid-wave reversal.
 
-### Changed files
-- `core/designsystem/.../foundation/material/TideShader.kt` (new): `TIDE_AGSL`, the full-screen AGSL wave.
-  - Inputs: `content` (live new theme) and `previous` (frozen old frame).
-  - Shape: a domain-warped fbm meander plus a swell bend the front.
-  - Detail: 5-tap directional smear, sand-grain dissolve, wet-sand darkening, broken foam crest, caustic glints.
-- `core/designsystem/.../foundation/ThemeReveal.kt` (rewritten). Public API unchanged: `HaloThemeRevealState.reveal(origin, motion, change)`,
-  `LocalHaloThemeReveal`, `HaloThemeRevealHost(isDark)`.
-  - Snapshot: freezes the frame with `layer.toImageBitmap()` and wraps it in a `BitmapShader`.
-  - Theme flip: calls `change()`, then waits up to 1s for `isDark` to flip.
-  - Animation: drives `front` and `time` with a `withFrameNanos` loop. Duration is 1300ms × slow-mo, eased with `HaloEasing.Standard`.
-  - Render: sets `RenderEffect.createRuntimeShaderEffect(shader, "content")` on the root GraphicsLayer each frame.
-  - Fallback: reduced motion, or no shader support, switches instantly.
-- `core/designsystem/.../theme/Effects.kt`: Tide tokens `tideBand` 140dp, `tideDissolve` 14dp, `tideGrain` 1dp,
-  `tideAmplitude` 28dp, `tideSmear` 36dp.
+- **Shape.** A conic front focused on the switch: `m = mix(along, r, TIDE_BEND = 0.6)`. It starts as an egg around
+  the switch and flattens as it travels. The band has a constant pixel width (distances are divided by |∇m|).
+- **Motion (Apple's fluid-interface principles).**
+  - Driven by `HaloSpring.Tide`, a critically damped spring with stiffness 7, roughly Apple's "smooth" spring with a
+    2.4s perceptual duration.
+  - It launches with a kick (`TIDE_KICK = 0.5`), so it starts at full speed and only decelerates, like water up a
+    beach.
+  - It is on screen for ~1.2s at 1×.
+  - The meander grows in over the first band of travel, so the wave is born at the switch with no pop.
+- **Interruptible.**
+  - Flipping the switch again mid-wave reverses the front, keeping its momentum, and the theme follows it back.
+  - The washed ("behind") and unwashed ("ahead") regions keep their themes. Whichever one isn't live comes from a
+    frozen frame (`swap` uniform).
+  - Only the latest reveal or reversal owns clean-up (a `generation` counter).
+- **Reduced motion, or no shader support:** a crossfade (`motion.fade()`, 120ms when reduced) instead of a hard cut.
+- **System bars.** `HaloThemeRevealHost` owns the icon appearance. Each bar flips at the midpoint of the fronts
+  touching its two ends.
+- **Sand and smear.**
+  - Tokens: `tideBand` 80dp, `tideDissolve` 10dp, `tideSmear` 20dp.
+  - Tap offsets are jittered per grain.
+  - Grain thresholds stay in [0.06, 0.94]. Before, the full 0–1 range left ~5% speckle across the whole band.
+- **Shader warm-up.** The shader is drawn invisibly for 2 frames at start-up, in a mode where it outputs exactly the
+  live content.
 
-Lint passes and `:app:assembleDebug` builds.
-
-### First device check (dark → light, 5× slow-mo): it works, but needs polish
-Recording: `shots/tide-d2l.mp4` (gitignored).
-1. **Status bar flips too early.** System-bar icons restyle the moment `change()` runs, so for about 1s there are
-   dark icons on the still-dark frozen frame.
-   - Fix: defer the bar restyle in `MainActivity` (its `DisposableEffect(dark)`) until the front has passed the
-     top of the screen.
-   - For example, expose a `chromeDark` state from `HaloThemeRevealState` that flips when `front` crosses the
-     status-bar region.
-2. **Wrong easing.** `HaloEasing.Standard` is front-loaded: the visible sweep is over by about 60% of the duration,
-   and the rest is the front crawling off-screen.
-   - Fix: add a sweep easing token, e.g. `HaloEasing.Sweep = CubicBezier(0.45, 0, 0.25, 1)`.
-   - Also trim the `start`/`end` margin so the motion happens on screen.
-3. **Smear too wide and stepped.** The 5 discrete taps show up as ghosted copies (the "Toggle" title is
-   double-imaged, and there are white slashes in the dark area ahead of the front).
-   - Fix: reduce `tideBand` (~80dp) and `tideSmear`.
-   - Jitter the tap offsets per grain with `hash(cell)` (or use more taps), so the smear reads as a continuous
-     stretch.
-4. **Salt-and-pepper speckle reaches too far** into the old side. Tighten the dissolve and the `near` sand term.
-5. **The wave starts at the corner opposite the far corner, not at the toggle.** That's a planar sweep from the
-   minimum corner. Decide whether the front should grow from the trigger instead (curved near the origin,
-   flattening as it travels).
-6. **Light → dark is not verified yet.**
+### Fine-tuning backlog: tap-to-wave latency (owner: "work with it for now")
+After the tap, the wave appears about 200ms later in a **debug** build.
+- Measured timeline:
+  - frame capture: 24ms
+  - `setApplicationNightMode`: 2.5ms
+  - **full-tree recomposition with the new palette: ~126ms**
+  - the next frame then picks up the flip
+- Done so far:
+  - `PlatformAppearanceRepository` emits the choice before the DataStore write (~200ms).
+  - `MainActivity` drives the palette from the stored mode (`darkOverride`), not the uiMode config change.
+- Next steps:
+  - Measure on a release build. Its APK isn't signed; sign it with the debug key to install.
+  - Reduce recomposition cost on a palette change, e.g. read colours in draw/lambdas, check stability.
+  - Consider re-tuning the first-use shader compile on a cold start (~235ms seen once; the warm-up may not cover the
+    hardware-bitmap input).
+- Other taste calls:
+  - the bend (0.6 grows backward 5× faster)
+  - glints that read like smoke wisps on the dark side
 
 ### How to capture
-`shot.ps1 -NoBuild` also skips the install step, so install manually after building:
 ```
 $adb="$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"; & $adb install -r -d app\build\outputs\apk\debug\app-debug.apk
 powershell -ExecutionPolicy Bypass -File .claude/skills/halo-component/scripts/shot.ps1 -Page toggle -NoBuild -Theme dark -SlowMo 5
-powershell -ExecutionPolicy Bypass -File .claude/skills/halo-component/scripts/find.ps1 -Desc "Dark mode"   # switch centre ≈ 1004 914
 ```
-Then record: start `adb shell screenrecord --time-limit 10 --bit-rate 40000000 /sdcard/tide.mp4`, then `adb shell input tap 1004 914`,
-then pull the file. Make a contact sheet with `ffmpeg -i tide.mp4 -vf "fps=5,scale=320:-2,tile=6x2" -frames:v 1 sheet.png`.
+Record with `adb shell screenrecord --size 640x1428 --bit-rate 40000000 --time-limit 9 /sdcard/tide.mp4`.
+- Native 1280×2856 fails to encode, and the automatic fallback stretches to 720×1280.
+- While recording, tap the switch with `adb shell input tap 1004 914`.
+- Pull the file, then keep only the changing frames:
+  `ffmpeg -i tide.mp4 -vf "mpdecimate,fps=4" -fps_mode vfr f%03d.png`.
 
 ## Backlog after Tide
 1. Put the AppearanceSwitch in the Home hero, as a slot from `ShowroomHomeScreen`.
 2. Re-verify every page and component in the light theme (Button, RollingAmount, HoldToSend, Home, Color, Depth…) and fix what's off.
 3. Update the docs:
-   - `references/tokens.md`: light palette, lightning, Mechanical, HaloLight, HaloMaterials, switch sizes, Tide.
+   - `references/tokens.md`: light palette, lightning, Mechanical, HaloLight, HaloMaterials, switch sizes, Tide
+     (incl. `HaloEasing.Sweep`).
    - HaloToggle spec: velvet derivation, dish depth.
    - HoldToSend spec: network param.
 4. Add `.gitattributes` (LF normalisation). Commit and push only when the owner asks.

@@ -2,6 +2,7 @@ package com.halo.feature.showroom.debug
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,8 @@ import com.halo.core.designsystem.icons.HaloIcons
 import com.halo.core.designsystem.theme.HaloHaptic
 import com.halo.core.designsystem.theme.HaloMotion
 import com.halo.core.designsystem.theme.HaloTheme
+import com.halo.core.designsystem.theme.haloDarkColors
+import com.halo.core.designsystem.theme.haloLightColors
 import com.halo.core.designsystem.theme.rememberSystemHaloMotion
 import com.halo.feature.showroom.ui.haloDepth
 import kotlinx.coroutines.delay
@@ -79,16 +82,21 @@ private val SLOW_MO = listOf(1f, 2f, 5f, 10f)
 /**
  * Wraps the app in [HaloTheme] with debug-controllable motion, plus a floating glass dock:
  * grid overlay (4/8dp), slow-mo (1–10×), reduced-motion simulation and an on-screen haptic log.
+ * [dark] picks the palette (the app passes the stored appearance so switches are immediate).
  */
 @Composable
-fun ShowroomDebugHost(content: @Composable () -> Unit) {
+fun ShowroomDebugHost(
+    dark: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
     val state = remember { ShowroomDebugState() }
     LaunchedEffect(state) { ShowroomDebugCommands.stream.collect { state.apply(it) } }
     val system = rememberSystemHaloMotion()
     val motion = remember(state.slowMo, state.reducedMotion, system) {
         HaloMotion(scale = state.slowMo, reduced = state.reducedMotion || system.reduced)
     }
-    HaloTheme(motion = motion, hapticObserver = state::log) {
+    val colors = remember(dark) { if (dark) haloDarkColors() else haloLightColors() }
+    HaloTheme(colors = colors, motion = motion, hapticObserver = state::log) {
         val backdrop = rememberHaloBackdrop()
         // Everything visible (content + dock + overlays) sits inside the reveal so a theme switch is seamless.
         HaloThemeRevealHost(isDark = HaloTheme.colors.isDark, modifier = Modifier.fillMaxSize()) {

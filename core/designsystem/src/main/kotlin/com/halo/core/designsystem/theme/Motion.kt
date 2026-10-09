@@ -36,6 +36,12 @@ enum class HaloSpring(val dampingRatio: Float, val stiffness: Float) {
      * ~330ms to settle, critically damped, never bounces.
      */
     Mechanical(dampingRatio = 1f, stiffness = 400f),
+    /**
+     * Full-screen water — the theme tide. Apple's "smooth" spring (bounce 0) with a ~2.4s perceptual duration,
+     * stiffness = (2π / duration)². Launched with a kick, it bursts from the trigger and decelerates as it runs
+     * out, like water up a beach; it can be reversed mid-flight and keeps its momentum.
+     */
+    Tide(dampingRatio = 1f, stiffness = 7f),
 }
 
 /** Fade durations — color, alpha and progress only. */
