@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="halo_canvas">#FF0A0A0B</color>
+    <color name="halo_mark">#FFD4FF3A</color>
+</resources>

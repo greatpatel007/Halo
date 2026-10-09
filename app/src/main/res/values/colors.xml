@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light theme window/splash colours (mirror HaloPalette), before Compose draws. -->
+    <color name="halo_canvas">#FFEBEEF2</color>
+    <color name="halo_mark">#FF0D1014</color>
+    <!-- Brand constants (launcher icon is always dark). -->
+    <color name="halo_ink">#FF0A0A0B</color>
+    <color name="halo_volt">#FFD4FF3A</color>
+</resources>

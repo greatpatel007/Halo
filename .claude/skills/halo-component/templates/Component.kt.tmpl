@@ -1,0 +1,77 @@
+package com.halo.core.designsystem.component
+
+// Imports: Compose ui / foundation / animation + com.halo.core.designsystem.{foundation,theme,icons}.*
+// Never androidx.compose.material*, ripple, or third-party UI libraries.
+
+/**
+ * <One-line purpose.>
+ *
+ * Spec: docs/components/<Name>.md · Archetype: <archetype> · Showroom: halo://showroom/<id>
+ *
+ * @param <state> hoisted state — the component never owns business state.
+ * @param modifier applied to the outermost element.
+ */
+@Composable
+fun <Name>(
+    // 1. Required state + event callbacks
+    onClick: () -> Unit,
+    // 2. Modifier — first optional parameter
+    modifier: Modifier = Modifier,
+    // 3. Behaviour flags
+    enabled: Boolean = true,
+    // 4. Appearance (enums, not booleans, for variants and sizes)
+    variant: <Name>Variant = <Name>Variant.Primary,
+    size: <Name>Size = <Name>Size.Large,
+    // 5. Interaction source (lets callers drive press-reactive visuals)
+    interactionSource: MutableInteractionSource? = null,
+    // 6. Slots last
+    content: @Composable RowScope.() -> Unit,
+) {
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    val colors = <name>Colors(variant, enabled)      // resolve tokens once
+    val motion = HaloTheme.motion
+    val haptics = HaloTheme.haptics
+    // Animated values: Animatable / animate*AsState with motion.spring(HaloSpring.X)
+    // Read them ONLY inside graphicsLayer {}, offset {}, drawBehind {} lambdas.
+    HaloPressable(
+        onClick = onClick,
+        enabled = enabled,
+        shape = shape,
+        interactionSource = source,
+        modifier = modifier.semantics { /* stateDescription, customActions… */ },
+    ) {
+        CompositionLocalProvider(LocalHaloContentColor provides colors.content) {
+            Row(verticalAlignment = Alignment.CenterVertically, content = content)
+        }
+    }
+}
+
+enum class <Name>Variant { Primary, Secondary }
+
+enum class <Name>Size(/* tokens are resolved in composition — store keys, not Dp */) { Small, Medium, Large }
+
+@Immutable
+private class <Name>Colors(val fill: Color, val content: Color, val edge: Color)
+
+@Composable
+private fun <name>Colors(variant: <Name>Variant, enabled: Boolean): <Name>Colors {
+    val c = HaloTheme.colors
+    return when (variant) {
+        <Name>Variant.Primary -> <Name>Colors(c.accent.fill, c.accent.onFill, Color.Transparent)
+        <Name>Variant.Secondary -> <Name>Colors(c.bg.surface, c.content.primary, c.line.default)
+    }
+}
+
+// ---------------------------------------------------------------- Previews (one per key state)
+
+@Preview
+@Composable
+private fun <Name>DefaultPreview() = HaloPreview {
+    <Name>(onClick = {}) { /* … */ }
+}
+
+@Preview
+@Composable
+private fun <Name>DisabledPreview() = HaloPreview {
+    <Name>(onClick = {}, enabled = false) { /* … */ }
+}

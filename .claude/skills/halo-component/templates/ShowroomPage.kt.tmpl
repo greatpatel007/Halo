@@ -1,0 +1,31 @@
+package com.halo.feature.showroom.pages.components
+
+// Register in ShowroomCatalog.kt, below the "halo-component" marker:
+//   ShowroomPage("<id>", "<Title>", "<one-line summary>", ShowroomSection.Components) { <Name>Page() },
+
+@Composable
+internal fun <Name>Page() {
+    // ---- 1. Playground: the live component + knobs that change its parameters.
+    var variant by rememberSaveable { mutableStateOf(<Name>Variant.Primary) }
+    SectionLabel("Playground", Modifier.enterRise(0))
+    ShowroomCard(Modifier.enterRise(1)) {
+        Box(Modifier.fillMaxWidth().padding(vertical = HaloTheme.spacing.xl), contentAlignment = Alignment.Center) {
+            <Name>(onClick = {}, variant = variant) { /* … */ }
+        }
+        Knob("Variant", <Name>Variant.entries, variant, { variant = it }, optionLabel = { it.name })
+    }
+
+    // ---- 2. State matrix: every state from the spec, rendered statically side by side.
+    SectionLabel("States", Modifier.enterRise(2))
+    Column(Modifier.enterRise(3), verticalArrangement = Arrangement.spacedBy(HaloTheme.spacing.sm)) {
+        // Default / Disabled / Loading / … with a micro caption each.
+    }
+
+    // ---- 3. Spec: tokens + motion table, as SpecLines.
+    SectionLabel("Spec", Modifier.enterRise(4))
+    ShowroomCard(Modifier.enterRise(5)) {
+        SpecLine("height", "controlXl · 64")
+        SpecLine("press", "scale 0.97 · Snap → Quick")
+        SpecLine("haptic", "Tap on click")
+    }
+}

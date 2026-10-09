@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash: the halo ring draws itself on, then its satellite appears. -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="240dp"
+            android:height="240dp"
+            android:viewportWidth="240"
+            android:viewportHeight="240">
+            <group
+                android:pivotX="120"
+                android:pivotY="120"
+                android:rotation="-90">
+                <path
+                    android:name="ring"
+                    android:pathData="M160,120 A40,40 0 1,1 80,120 A40,40 0 1,1 160,120"
+                    android:strokeColor="@color/halo_mark"
+                    android:strokeLineCap="round"
+                    android:strokeWidth="10"
+                    android:trimPathEnd="0" />
+            </group>
+            <path
+                android:name="satellite"
+                android:fillAlpha="0"
+                android:fillColor="@color/halo_mark"
+                android:pathData="M169,79 A8,8 0 1,1 153,79 A8,8 0 1,1 169,79 Z" />
+        </vector>
+    </aapt:attr>
+    <target android:name="ring">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="650"
+                android:interpolator="@android:interpolator/fast_out_slow_in"
+                android:propertyName="trimPathEnd"
+                android:valueFrom="0"
+                android:valueTo="1"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+    <target android:name="satellite">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="200"
+                android:propertyName="fillAlpha"
+                android:startOffset="520"
+                android:valueFrom="0"
+                android:valueTo="1"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+</animated-vector>
