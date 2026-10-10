@@ -1,13 +1,17 @@
 package com.halo.feature.showroom.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -42,6 +46,9 @@ class AppearanceViewModel @Inject constructor(
 /**
  * The app's appearance switch (decision D2): a Large [HaloToggle] whose value is the current theme. Flipping it
  * runs the Tide theme transition, growing from the switch itself.
+ *
+ * Response first (Apple, fluid interfaces): the thumb takes the new position on the very next frame, from local
+ * state, instead of waiting for the app-wide theme change to land; the Tide then grows out of the switch.
  */
 @Composable
 internal fun AppearanceSwitch(
@@ -52,18 +59,31 @@ internal fun AppearanceSwitch(
     val motion = HaloTheme.motion
     val reveal = LocalHaloThemeReveal.current
     val scope = rememberCoroutineScope()
-    var origin by remember { mutableStateOf(Offset.Zero) }
+    var bounds by remember { mutableStateOf(Rect.Zero) }
+    // The choice the user just made, shown until the theme catches up (or reverts, if it never does).
+    var pending by remember { mutableStateOf<Boolean?>(null) }
+    var taps by remember { mutableIntStateOf(0) }
+    LaunchedEffect(dark) { if (pending == dark) pending = null }
+    // The switch's visible housing (its touch target is taller): the part of the screen that changes first.
+    val housing = with(LocalDensity.current) { HaloTheme.sizes.switchLg.toSize() }
     HaloToggle(
-        checked = dark,
+        checked = pending ?: dark,
         onCheckedChange = { toDark ->
             val mode = if (toDark) ThemeMode.Dark else ThemeMode.Light
+            pending = toDark
+            val tap = ++taps
+            val trigger = Rect(bounds.center - Offset(housing.width / 2f, housing.height / 2f), housing)
             scope.launch {
-                if (reveal != null) reveal.reveal(origin, motion) { viewModel.setThemeMode(mode) }
-                else viewModel.setThemeMode(mode)
+                try {
+                    if (reveal != null) reveal.reveal(trigger, motion) { viewModel.setThemeMode(mode) }
+                    else viewModel.setThemeMode(mode)
+                } finally {
+                    if (tap == taps) pending = null
+                }
             }
         },
         size = HaloToggleSize.Large,
         contentDescription = "Dark mode",
-        modifier = modifier.onGloballyPositioned { origin = it.boundsInRoot().center },
+        modifier = modifier.onGloballyPositioned { bounds = it.boundsInRoot() },
     )
 }

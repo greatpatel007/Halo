@@ -24,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -71,13 +73,15 @@ internal fun ShowroomHomeContent(
 ) {
     val spacing = HaloTheme.spacing
     val backdrop = rememberHaloBackdrop()
+    val scrollState = rememberScrollState()
+    val revealPx = with(LocalDensity.current) { spacing.x4.toPx() }
     Box(Modifier.fillMaxSize()) {
         Column(
             Modifier
                 .fillMaxSize()
                 .background(HaloTheme.colors.bg.canvas)
                 .backdropSource(backdrop)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = spacing.gutter),
         ) {
             Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
@@ -104,10 +108,12 @@ internal fun ShowroomHomeContent(
             Spacer(Modifier.height(DockClearance))
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
-        // Status-bar protection: content scrolls under a glass strip, never under bare system icons.
+        // Status-bar protection: content scrolls under a glass strip, never under bare system icons. It fades in
+        // over the first 40dp of scroll (like ShowroomScaffold's bar), so at rest the canvas runs edge to edge.
         Box(
             Modifier
                 .fillMaxWidth()
+                .graphicsLayer { alpha = (scrollState.value / revealPx).coerceIn(0f, 1f) }
                 .windowInsetsTopHeight(WindowInsets.statusBars)
                 .haloDepth(HaloDepth.Glass, RectangleShape, backdrop = backdrop),
         )

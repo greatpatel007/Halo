@@ -61,6 +61,8 @@ private class HaloIndicationNode(
     private val press = Animatable(0f)
     private val focus = Animatable(0f)
     private var origin = Offset.Unspecified
+    /** Refilled in place each frame of the press highlight. */
+    private val clip = Path()
 
     override fun onAttach() {
         coroutineScope.trackPress(
@@ -91,7 +93,9 @@ private class HaloIndicationNode(
             val reach = farthestCorner(center, size)
             val radius = reach * (0.35f + 0.65f * p)
             val outline = shape.createOutline(size, layoutDirection, this)
-            clipPath(Path().apply { addOutline(outline) }) {
+            clip.reset()
+            clip.addOutline(outline)
+            clipPath(clip) {
                 drawCircle(
                     brush = Brush.radialGradient(
                         0f to tint.copy(alpha = 0.18f * p),

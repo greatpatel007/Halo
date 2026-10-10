@@ -20,6 +20,14 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
+        // Release code (R8, no debuggable overhead) signed with the local debug key, so it installs anywhere.
+        // Judge motion and frame times on this, not on debug: debug Compose runs several times slower.
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+            isProfileable = true
+        }
     }
 }
 

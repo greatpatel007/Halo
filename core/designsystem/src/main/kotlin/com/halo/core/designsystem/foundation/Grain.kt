@@ -2,8 +2,11 @@ package com.halo.core.designsystem.foundation
 
 import android.graphics.RuntimeShader
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.CacheDrawModifierNode
 import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.node.DelegatingNode
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.platform.InspectorInfo
 
 /**
  * Per-pixel film grain (AGSL). Breaks up banding in large dark gradients and gives hero surfaces a
@@ -28,14 +31,40 @@ half4 main(float2 coord) {
 """
 
 /** @param intensity peak grain opacity (0..1). Hero surfaces use ~0.05. */
-fun Modifier.haloGrain(intensity: Float = 0.05f, seed: Float = 17f): Modifier = drawWithCache {
-    val shader = RuntimeShader(GRAIN_AGSL).apply {
-        setFloatUniform("intensity", intensity)
-        setFloatUniform("seed", seed)
+fun Modifier.haloGrain(intensity: Float = 0.05f, seed: Float = 17f): Modifier = this then GrainElement(intensity, seed)
+
+private data class GrainElement(val intensity: Float, val seed: Float) : ModifierNodeElement<GrainNode>() {
+    override fun create() = GrainNode(intensity, seed)
+    override fun update(node: GrainNode) = node.update(intensity, seed)
+    override fun InspectorInfo.inspectableProperties() {
+        name = "haloGrain"
+        properties["intensity"] = intensity
+        properties["seed"] = seed
     }
-    val brush = ShaderBrush(shader)
-    onDrawWithContent {
-        drawContent()
-        drawRect(brush)
+}
+
+/**
+ * Compiles the shader once per element. Recomposing with the same values keeps the cached draw; new values only
+ * update the uniforms.
+ */
+private class GrainNode(private var intensity: Float, private var seed: Float) : DelegatingNode() {
+    private val shader = RuntimeShader(GRAIN_AGSL)
+    private val brush = ShaderBrush(shader)
+    private val draw = delegate(
+        CacheDrawModifierNode {
+            shader.setFloatUniform("intensity", intensity)
+            shader.setFloatUniform("seed", seed)
+            onDrawWithContent {
+                drawContent()
+                drawRect(brush)
+            }
+        },
+    )
+
+    fun update(intensity: Float, seed: Float) {
+        if (intensity == this.intensity && seed == this.seed) return
+        this.intensity = intensity
+        this.seed = seed
+        draw.invalidateDrawCache()
     }
 }

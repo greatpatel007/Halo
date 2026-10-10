@@ -29,11 +29,17 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -65,6 +71,10 @@ import kotlin.math.sqrt
  * The host also owns the system-bar icon appearance, so the status and navigation bar icons flip only when the
  * front washes over them, not when the theme changes underneath the frozen frame.
  *
+ * Response first (Apple, fluid interfaces): the control that triggered the change answers the finger before the
+ * theme work lands. The theme is applied [TRIGGER_LEAD_FRAMES] frames after the tap, so the trigger's own motion (the
+ * switch thumb) is already under way, and the trigger always shows live — never the frozen frame or the sand.
+ *
  * Reduced motion, or a device that can't run the shader, crossfades instead (Apple: replace motion with a
  * dissolve).
  */
@@ -88,6 +98,8 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
     /** Theme the navigation-bar icons follow; switches when the front crosses the bar. */
     internal var navDark by mutableStateOf(false)
     internal var origin = Offset.Zero
+    /** Bounds of the trigger in root coordinates; it always shows the live content (see [TIDE_AGSL]). */
+    internal var keep = Rect.Zero
     internal var direction = Offset(-1f, 1f)
     internal var size = IntSize.Zero
     internal var supported = false
@@ -111,10 +123,12 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
     private var generation = 0
 
     /**
-     * @param origin centre of the trigger in root coordinates — where the wave starts.
+     * @param trigger bounds of the control in root coordinates. The wave starts at its centre, and the control
+     * itself stays live throughout, so its own response to the tap is never covered.
      * @param change flips the theme (usually a ViewModel action); the wave waits for it to take effect.
      */
-    suspend fun reveal(origin: Offset, motion: HaloMotion, change: () -> Unit) {
+    suspend fun reveal(trigger: Rect, motion: HaloMotion, change: () -> Unit) {
+        keep = trigger
         if (active) return reverse(motion, change)
         if (size == IntSize.Zero) {
             change()
@@ -128,7 +142,7 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
         if (motion.reduced || !supported) return crossfade(frozen, motion, change)
 
         val run = ++generation
-        this.origin = origin
+        origin = trigger.center
         val corners = listOf(
             Offset(0f, 0f),
             Offset(size.width.toFloat(), 0f),
@@ -153,6 +167,7 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
         began = System.nanoTime()
         active = true
         try {
+            leadFrames()
             change()
             withTimeoutOrNull(SWITCH_TIMEOUT_MS) { snapshotFlow { isDark }.first { it == behindDark } }
             if (run != generation) return
@@ -171,6 +186,7 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
         outbound = !outbound
         val wanted = if (outbound) behindDark else aheadDark
         try {
+            leadFrames()
             change()
             withTimeoutOrNull(SWITCH_TIMEOUT_MS) { snapshotFlow { isDark }.first { it == wanted } }
             if (run != generation) return
@@ -195,6 +211,7 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
         fadeFrame = frozen
         fadeAlpha = 1f
         try {
+            leadFrames()
             change()
             withTimeoutOrNull(SWITCH_TIMEOUT_MS) { snapshotFlow { isDark }.first { it != from } }
             animate(1f, 0f, animationSpec = motion.fade()) { value, _ -> fadeAlpha = value }
@@ -202,6 +219,9 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
             if (run == generation) fadeFrame = null
         }
     }
+
+    /** Lets the trigger's own response render before the (expensive) theme recomposition lands. */
+    private suspend fun leadFrames() = repeat(TRIGGER_LEAD_FRAMES) { withFrameNanos { } }
 
     private fun finish() {
         active = false
@@ -236,6 +256,8 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
          */
         const val TIDE_KICK = 0.5f
         const val SWITCH_TIMEOUT_MS = 1_000L
+        /** Frames the trigger moves on its own before the theme is applied (~33ms at 60Hz). */
+        const val TRIGGER_LEAD_FRAMES = 2
         const val NANOS_PER_S = 1_000_000_000f
     }
 }
@@ -280,6 +302,7 @@ fun HaloThemeRevealHost(
     // live content.
     var warming by remember { mutableStateOf(shader != null) }
     val blank = remember { Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).asImageBitmap().shader() }
+    val keepClip = remember { Path() }
     LaunchedEffect(Unit) {
         repeat(WARM_FRAMES) { withFrameNanos { } }
         warming = false
@@ -334,6 +357,9 @@ fun HaloThemeRevealHost(
                             setFloatUniform("time", state.time)
                             setFloatUniform("swap", if (tide && liveIsBehind) 0f else 1f)
                             setColorUniform("foam", foam)
+                            val keep = if (tide) state.keep else NO_KEEP
+                            setFloatUniform("keep", keep.left, keep.top, keep.right, keep.bottom)
+                            setFloatUniform("keepRadius", keep.minDimension / 2f)
                             setInputShader("frozen", frozen ?: blank)
                         }
                         fx.renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
@@ -342,7 +368,13 @@ fun HaloThemeRevealHost(
                     }
                     fx.record { drawLayer(layer) }
                     drawLayer(fx)
-                    state.fadeFrame?.let { drawImage(it, alpha = state.fadeAlpha) }
+                    state.fadeFrame?.let { frame ->
+                        // The crossfade leaves the trigger live too.
+                        val keep = state.keep
+                        keepClip.reset()
+                        keepClip.addRoundRect(RoundRect(keep, CornerRadius(keep.minDimension / 2f)))
+                        clipPath(keepClip, ClipOp.Difference) { drawImage(frame, alpha = state.fadeAlpha) }
+                    }
                 },
         ) { content() }
     }
@@ -353,6 +385,9 @@ private const val WARM_FRAMES = 2
 
 /** Front position for the warm-up: far behind the origin, so every pixel is "ahead" (the live content). */
 private const val WARM_FRONT = 1e6f
+
+/** No trigger region: a point far off screen, so nothing is kept live. */
+private val NO_KEEP = Rect(-1e5f, -1e5f, -1e5f, -1e5f)
 
 /** Furthest the meander (1x) plus swell (0.45x) can push the front, in amplitudes. */
 private const val MEANDER_REACH = 1.45f

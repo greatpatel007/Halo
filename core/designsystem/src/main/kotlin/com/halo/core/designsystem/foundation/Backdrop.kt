@@ -85,6 +85,10 @@ private class BackdropGlassNode(
 
     private var layer: GraphicsLayer? = null
     private var position by mutableStateOf(Offset.Zero)
+    // Reused every frame: the clip path is refilled in place, the blur is rebuilt only when its radius changes.
+    private val clip = Path()
+    private var blur: BlurEffect? = null
+    private var blurPx = 0f
 
     override fun onAttach() {
         layer = requireGraphicsContext().createGraphicsLayer()
@@ -104,12 +108,17 @@ private class BackdropGlassNode(
         if (glass != null) {
             val delta = backdrop.sourcePosition - position
             val radius = blurRadius.toPx()
-            glass.renderEffect = if (radius > 0f) BlurEffect(radius, radius, TileMode.Clamp) else null
+            if (radius != blurPx) {
+                blurPx = radius
+                blur = if (radius > 0f) BlurEffect(radius, radius, TileMode.Clamp) else null
+            }
+            glass.renderEffect = blur
             glass.record {
                 translate(delta.x, delta.y) { drawLayer(backdrop.layer) }
             }
-            val outline = shape.createOutline(size, layoutDirection, this)
-            clipPath(Path().apply { addOutline(outline) }) { drawLayer(glass) }
+            clip.reset()
+            clip.addOutline(shape.createOutline(size, layoutDirection, this))
+            clipPath(clip) { drawLayer(glass) }
         }
         drawContent()
     }

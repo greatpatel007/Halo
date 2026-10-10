@@ -14,6 +14,9 @@ package com.halo.core.designsystem.foundation.material
  * Runs as a RenderEffect on the window layer: `content` is the live theme, `frozen` a frozen frame. Normally the
  * live theme is behind the front (washed in) and the frozen old frame ahead; after a mid-wave reversal the theme
  * flips back, so `swap` = 1 makes the frozen frame the washed region and the live theme the unwashed one.
+ *
+ * The trigger (`keep`, a pill) always shows the live content: it is where the new theme comes from, so its own
+ * response to the finger (the switch thumb sliding) is never hidden by the frozen frame or the sand.
  */
 internal const val TIDE_AGSL = """
 uniform shader content;
@@ -31,6 +34,8 @@ uniform float smear;
 uniform float time;
 uniform float swap;
 layout(color) uniform half4 foam;
+uniform float4 keep;
+uniform float keepRadius;
 
 float hash(float2 p) {
     float3 p3 = fract(float3(p.xyx) * 0.1031);
@@ -60,7 +65,7 @@ float fbm(float2 p) {
 half4 behind(float2 p) { return swap > 0.5 ? frozen.eval(p) : content.eval(p); }
 half4 ahead(float2 p) { return swap > 0.5 ? content.eval(p) : frozen.eval(p); }
 
-half4 main(float2 p) {
+half4 tide(float2 p) {
     float2 d = p - origin;
     float r = length(d);
     float2 radial = r > 0.5 ? d / r : dir;
@@ -129,5 +134,15 @@ half4 main(float2 p) {
         * exp(-abs(x + dissolve * 3.0) / dissolve) * 0.25;
     c.rgb += foam.rgb * half(glint) * c.a;
     return c;
+}
+
+half4 main(float2 p) {
+    // Signed distance to the trigger's pill: inside it the live content shows untouched, with a 1px soft edge.
+    float2 extent = (keep.zw - keep.xy) * 0.5;
+    float2 q = abs(p - (keep.xy + keep.zw) * 0.5) - extent + keepRadius;
+    float k = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - keepRadius;
+    if (k < -1.0) return content.eval(p);
+    half4 c = tide(p);
+    return k < 1.0 ? mix(content.eval(p), c, half(smoothstep(-1.0, 1.0, k))) : c;
 }
 """

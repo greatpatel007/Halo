@@ -16,15 +16,18 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import com.halo.core.designsystem.foundation.HaloIndication
 
-val LocalHaloColors = staticCompositionLocalOf { haloDarkColors() }
+// Tokens that change with the theme are dynamic locals: a theme switch then recomposes only the scopes that read
+// them. A static local would invalidate the whole tree below its provider, and the Tide's first frame waits on
+// that recomposition. Tokens that never change at runtime stay static (cheapest to read).
+val LocalHaloColors = compositionLocalOf { haloDarkColors() }
 val LocalHaloTypography = staticCompositionLocalOf { haloTypography() }
 val LocalHaloSpacing = staticCompositionLocalOf { HaloSpacing() }
 val LocalHaloSizes = staticCompositionLocalOf { HaloSizes() }
 val LocalHaloStroke = staticCompositionLocalOf { HaloStroke() }
 val LocalHaloRadius = staticCompositionLocalOf { HaloRadius() }
-val LocalHaloEffects = staticCompositionLocalOf { HaloEffects() }
-val LocalHaloLight = staticCompositionLocalOf { haloKeyLight(dark = true) }
-val LocalHaloMaterials = staticCompositionLocalOf { haloMaterials(dark = true) }
+val LocalHaloEffects = compositionLocalOf { HaloEffects() }
+val LocalHaloLight = compositionLocalOf { haloKeyLight(dark = true) }
+val LocalHaloMaterials = compositionLocalOf { haloMaterials(dark = true) }
 val LocalHaloMotion = compositionLocalOf { HaloMotion() }
 val LocalHaloHaptics = staticCompositionLocalOf<HaloHaptics> {
     error("HaloHaptics not provided — wrap content in HaloTheme { }")

@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.CacheDrawModifierNode
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -17,6 +17,9 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.node.DelegatingNode
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Dp
 import com.halo.core.designsystem.theme.HaloColors
 import com.halo.core.designsystem.theme.HaloEffects
@@ -110,24 +113,68 @@ private fun Modifier.edges(
     highlight: Color?,
     width: Dp,
     falloff: Dp,
-): Modifier = drawWithCache {
-    val w = width.toPx()
-    val inset = w / 2f
-    val outline = shape.createOutline(Size(size.width - w, size.height - w), layoutDirection, this)
-    val style = Stroke(w)
-    val catchLight = highlight?.let {
-        Brush.verticalGradient(
-            0f to it,
-            1f to Color.Transparent,
-            startY = 0f,
-            endY = min(size.height * 0.5f, falloff.toPx()),
-        )
+): Modifier = this then EdgesElement(shape, border, highlight, width, falloff)
+
+private data class EdgesElement(
+    val shape: Shape,
+    val border: Color,
+    val highlight: Color?,
+    val width: Dp,
+    val falloff: Dp,
+) : ModifierNodeElement<EdgesNode>() {
+    override fun create() = EdgesNode(shape, border, highlight, width, falloff)
+    override fun update(node: EdgesNode) = node.update(shape, border, highlight, width, falloff)
+    override fun InspectorInfo.inspectableProperties() {
+        name = "haloEdges"
+        properties["border"] = border
+        properties["highlight"] = highlight
+        properties["width"] = width
     }
-    onDrawWithContent {
-        drawContent()
-        translate(inset, inset) {
-            drawOutline(outline, border, style = style)
-            if (catchLight != null) drawOutline(outline, catchLight, style = style)
+}
+
+/** Recomposing with equal arguments keeps the cached outline and brush (no rebuild, no redraw). */
+private class EdgesNode(
+    private var shape: Shape,
+    private var border: Color,
+    private var highlight: Color?,
+    private var width: Dp,
+    private var falloff: Dp,
+) : DelegatingNode() {
+    private val draw = delegate(
+        CacheDrawModifierNode {
+            val w = width.toPx()
+            val inset = w / 2f
+            val outline = shape.createOutline(Size(size.width - w, size.height - w), layoutDirection, this)
+            val style = Stroke(w)
+            val catchLight = highlight?.let {
+                Brush.verticalGradient(
+                    0f to it,
+                    1f to Color.Transparent,
+                    startY = 0f,
+                    endY = min(size.height * 0.5f, falloff.toPx()),
+                )
+            }
+            onDrawWithContent {
+                drawContent()
+                translate(inset, inset) {
+                    drawOutline(outline, border, style = style)
+                    if (catchLight != null) drawOutline(outline, catchLight, style = style)
+                }
+            }
+        },
+    )
+
+    fun update(shape: Shape, border: Color, highlight: Color?, width: Dp, falloff: Dp) {
+        if (shape == this.shape && border == this.border && highlight == this.highlight && width == this.width &&
+            falloff == this.falloff
+        ) {
+            return
         }
+        this.shape = shape
+        this.border = border
+        this.highlight = highlight
+        this.width = width
+        this.falloff = falloff
+        draw.invalidateDrawCache()
     }
 }

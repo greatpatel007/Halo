@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -111,12 +110,13 @@ fun ShowroomDebugHost(
                         .backdropSource(backdrop),
                 ) { content() }
                 state.gridStep?.let { GridOverlay(it) }
+                // Just above the dock that controls it: never over a page's header or the control being tested.
                 HapticLog(
                     state,
                     Modifier
-                        .align(Alignment.TopCenter)
-                        .statusBarsPadding()
-                        .padding(top = HaloTheme.sizes.controlLg + HaloTheme.spacing.sm),
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = HaloTheme.spacing.lg + DockHeight + HaloTheme.spacing.sm),
                 )
                 Dock(
                     state = state,
@@ -130,6 +130,10 @@ fun ShowroomDebugHost(
         }
     }
 }
+
+/** Height of the [Dock]: its buttons plus the glass padding around them. */
+private val DockHeight: Dp
+    @Composable get() = HaloTheme.sizes.controlMd + HaloTheme.spacing.xs * 2
 
 @Composable
 private fun Dock(state: ShowroomDebugState, backdrop: com.halo.core.designsystem.foundation.HaloBackdrop, modifier: Modifier) {
