@@ -9,6 +9,7 @@ Every design-system component, in build order. Maintained by the `halo-component
 | HaloRollingAmount | Value display | Review | `component/HaloRollingAmount.kt` | `halo://showroom/rolling-amount` |
 | HaloHoldToSend | Gesture-commit | Review | `component/HaloHoldToSend.kt` | `halo://showroom/hold-to-send` |
 | HaloToggle | Toggle | Review | `component/HaloToggle.kt` | `halo://showroom/toggle` |
+| HaloLogo | Feedback (brand mark) | Draft | `component/HaloLogo.kt` | `halo://showroom/logo` |
 
 ## Foundations (not components; listed for reuse)
 | Primitive | What it gives you |

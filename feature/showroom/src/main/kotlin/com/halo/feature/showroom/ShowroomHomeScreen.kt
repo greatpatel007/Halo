@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.halo.core.designsystem.component.HaloLogo
 import com.halo.core.designsystem.foundation.AmountFormat
 import com.halo.core.designsystem.foundation.HaloDepth
 import com.halo.core.designsystem.foundation.HaloPressable
@@ -146,10 +147,14 @@ private fun Hero(uiState: ShowroomHomeUiState, appearanceSwitch: @Composable () 
             appearanceSwitch()
         }
         Spacer(Modifier.height(spacing.lg))
-        HaloText(
-            text = "HALO",
-            style = HaloTheme.typography.amountHero.copy(fontWeight = FontWeight.ExtraLight, fontSize = 64.sp, lineHeight = 64.sp, letterSpacing = 0.sp),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            HaloLogo()
+            Spacer(Modifier.width(spacing.md))
+            HaloText(
+                text = "HALO",
+                style = HaloTheme.typography.amountHero.copy(fontWeight = FontWeight.ExtraLight, fontSize = 64.sp, lineHeight = 64.sp, letterSpacing = 0.sp),
+            )
+        }
         Spacer(Modifier.height(spacing.md))
         HaloText(
             text = "Hand-built Compose components for a Bitcoin wallet. Every pixel, spring and haptic is a token.",

@@ -41,6 +41,10 @@ class HaloSizes(
     val switchMd: DpSize = DpSize(80.dp, 30.dp),
     /** Switch housing, hero (e.g. the appearance switch). */
     val switchLg: DpSize = DpSize(112.dp, 42.dp),
+    /** Glass halo mark, compact (top bars, small headers). */
+    val logoMd: Dp = 32.dp,
+    /** Glass halo mark, hero (next to the HALO wordmark). */
+    val logoLg: Dp = 56.dp,
 )
 
 @Immutable

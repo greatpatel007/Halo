@@ -65,6 +65,8 @@ Rules:
   - controls: `controlSm 36`, `controlMd 48`, `controlLg 56`, `controlXl 64`
   - `minTouch 48`
   - icons: `iconSm 16`, `iconMd 20`, `iconLg 24`, `iconXl 32`
+  - switch housings: `switchMd 80×30`, `switchLg 112×42`
+  - glass halo mark: `logoMd 32`, `logoLg 56`
 - **`radius`:**
   - `xs 8`, `sm 12`, `md 16`, `lg 20`, `xl 28`, `sheet 32`
   - `full` (a 50% shape)
@@ -87,6 +89,13 @@ Light effects:
 - **Glow:** `Modifier.haloGlow(color, shape, radius, spread, intensity = { … })`, with `accent.glow` or `bitcoin.glow`.
 - **Grain:** `Modifier.haloGrain(effects.grain)` on hero surfaces only.
 
+## Materials (`HaloTheme.materials`)
+Components pick a material role, never their own albedo, gloss or grain.
+- `body`, `knob`: `ReliefMaterial` for housings and movable parts (soft-touch/graphite on dark, ceramic on light).
+- `recessFloor`, `velvetGrain`: channels and velvet fills.
+- `glass`: `GlassMaterial` (tint, absorption, Fresnel reflectance, environment, specular, shininess). Smoky graphite
+  glass on dark, cool clear glass on light. Used by the halo mark.
+
 ## Motion (`HaloTheme.motion`)
 | `HaloSpring` | ζ / k | Use |
 |---|---|---|
@@ -96,6 +105,9 @@ Light effects:
 | `Expressive` | 0.65 / 400 | selection pills, morphs, success pop, shake |
 | `Gentle` | 1.0 / 220 | screens, sheets, shared elements, enter |
 | `Digit` | 0.75 / 700 | odometer digit roll |
+| `Mechanical` | 1.0 / 400 | switch thumbs, sliders with mass (~330ms, never bounces) |
+| `Tide` | 1.0 / 7 | the theme transition's water front (launched with a kick) |
+| `Orbit` | 1.0 / 12 | light travelling round the glass halo (Apple "smooth", ~1.8s; launched with a kick) |
 
 - **Calls:**
   - `motion.spring<T>(token, visibilityThreshold?)` for anything spatial.

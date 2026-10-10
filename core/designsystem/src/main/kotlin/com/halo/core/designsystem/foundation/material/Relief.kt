@@ -25,6 +25,23 @@ class ReliefMaterial(
     val ambientOcclusion: Float = 0.35f,
 )
 
+/** How a piece of clear glass responds to the scene light (e.g. the halo mark's tube). */
+@Immutable
+class GlassMaterial(
+    /** Colour thick glass absorbs towards: smoky graphite on dark, cool clear on light. */
+    val tint: Color,
+    /** Beer–Lambert absorption per tube radius of glass travelled (0 = perfectly clear). */
+    val absorption: Float,
+    /** Reflectance facing the viewer (Fresnel F0); glass is ~0.04 and rises to 1 at grazing angles. */
+    val reflectance: Float,
+    /** What the glass reflects away from the key light: the room around the scene. */
+    val environment: Color,
+    /** Specular strength (multiplied by the light's own specular). */
+    val specular: Float,
+    /** Highlight tightness; polished glass is very tight. */
+    val shininess: Float,
+)
+
 /** A channel sunk into a body (e.g. a switch track). */
 @Immutable
 class Recess(

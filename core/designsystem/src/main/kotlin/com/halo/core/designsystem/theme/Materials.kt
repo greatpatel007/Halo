@@ -2,6 +2,7 @@ package com.halo.core.designsystem.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import com.halo.core.designsystem.foundation.material.GlassMaterial
 import com.halo.core.designsystem.foundation.material.ReliefMaterial
 
 /**
@@ -18,6 +19,8 @@ class HaloMaterials(
     val recessFloor: Color,
     /** Fibre grain of velvet fills (the texture layer in switch channels). */
     val velvetGrain: Float,
+    /** Clear glass: the halo mark's tube. */
+    val glass: GlassMaterial,
 )
 
 fun haloMaterials(dark: Boolean): HaloMaterials = with(HaloPalette) {
@@ -27,6 +30,7 @@ fun haloMaterials(dark: Boolean): HaloMaterials = with(HaloPalette) {
             knob = ReliefMaterial(base = Ink600, specular = 0.85f, shininess = 36f, grain = 0.02f),
             recessFloor = Ink950,
             velvetGrain = 0.10f,
+            glass = GlassMaterial(tint = Ink950, absorption = 0.8f, reflectance = 0.04f, environment = Ink500, specular = 1.8f, shininess = 90f),
         )
     } else {
         HaloMaterials(
@@ -34,6 +38,7 @@ fun haloMaterials(dark: Boolean): HaloMaterials = with(HaloPalette) {
             knob = ReliefMaterial(base = Ceramic025, specular = 0.7f, shininess = 26f, grain = 0.012f),
             recessFloor = Ceramic150,
             velvetGrain = 0.08f,
+            glass = GlassMaterial(tint = Slate400, absorption = 0.12f, reflectance = 0.04f, environment = Slate400, specular = 1.2f, shininess = 90f),
         )
     }
 }

@@ -10,6 +10,7 @@ import com.halo.feature.showroom.pages.SpacingPage
 import com.halo.feature.showroom.pages.TypePage
 import com.halo.feature.showroom.pages.components.ButtonPage
 import com.halo.feature.showroom.pages.components.HoldToSendPage
+import com.halo.feature.showroom.pages.components.LogoPage
 import com.halo.feature.showroom.pages.components.RollingAmountPage
 import com.halo.feature.showroom.pages.components.TogglePage
 
@@ -44,6 +45,7 @@ object ShowroomCatalog {
         ShowroomPage("rolling-amount", "Rolling amount", "Odometer digits · sats / BTC / fiat · privacy", ShowroomSection.Components) { RollingAmountPage() },
         ShowroomPage("hold-to-send", "Hold to send", "Charge · lock · check · spark burst", ShowroomSection.Components) { HoldToSendPage() },
         ShowroomPage("toggle", "Toggle", "Ceramic / graphite switch · the theme switch", ShowroomSection.Components) { TogglePage() },
+        ShowroomPage("logo", "Logo", "Glass halo · carried light · orbit on tap", ShowroomSection.Components) { LogoPage() },
     )
 
     fun find(id: String): ShowroomPage? = pages.firstOrNull { it.id == id }
