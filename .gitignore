@@ -22,3 +22,6 @@ Thumbs.db
 # Local Claude settings / screenshots
 .claude/settings.local.json
 shots/
+
+# Local session state (resume notes) — never committed
+SESSION_STATE.md

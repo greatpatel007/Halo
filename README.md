@@ -58,12 +58,18 @@ build-logic/convention                             (Gradle convention plugins)
 
 ## Build
 Requirements: Android Studio 2026.2+ (JBR 21), SDK 37, minSdk 33.
-```powershell
-$env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
-.\gradlew.bat :app:assembleDebug        # build
-.\gradlew.bat :core:domain:test         # unit tests
-python -I .claude/skills/halo-component/scripts/lint_ds.py   # design-system lint
+Works on Windows, macOS and Linux. The simplest path is to open the project in Android Studio and run `app`.
+From a terminal, use the bundled helper (Python 3.9+, standard library only). It finds Android Studio's JDK and
+your Android SDK by itself:
+```bash
+python3 -I .claude/skills/halo-component/scripts/halo.py doctor                        # show the discovered JDK / SDK
+python3 -I .claude/skills/halo-component/scripts/halo.py gradle :app:assembleDebug     # build
+python3 -I .claude/skills/halo-component/scripts/halo.py gradle :core:domain:test      # unit tests
+python3 -I .claude/skills/halo-component/scripts/lint_ds.py                            # design-system lint
+python3 -I .claude/skills/halo-component/scripts/halo.py shot hold-to-send             # build, install, screenshot a page
 ```
+On Windows, use `python` instead of `python3`. You can also call the Gradle wrapper directly (`./gradlew` or
+`gradlew.bat`) once `JAVA_HOME` points to a JDK 21+.
 Open any Showroom page by deep link: `adb shell am start -d "halo://showroom/hold-to-send" com.halo.wallet`.
 Add `?slowmo=5&grid=8` to review motion and alignment.
 

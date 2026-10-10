@@ -134,5 +134,5 @@ ceramic Ceramic050 housing, Ceramic150 floor, Ceramic000 thumb.
 ## 13. Verification
 - Lint: OK.
 - Screenshots: `shots/toggle-dark.png` and `shots/toggle-light.png` (state matrix), `shots/toggle-pressed.png`, `shots/toggle-mid.png`.
-- Zoomed pixel review of the dishes, channel rim, fill edge and shadows in both themes (`scripts/zoom.ps1`).
+- Zoomed pixel review of the dishes, channel rim, fill edge and shadows in both themes (`halo.py zoom`).
 - Unverified: how the haptics feel (on device).

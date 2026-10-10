@@ -53,8 +53,8 @@ After the tap, the wave appears about 200ms later in a **debug** build.
 
 ### How to capture
 ```
-$adb="$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"; & $adb install -r -d app\build\outputs\apk\debug\app-debug.apk
-powershell -ExecutionPolicy Bypass -File .claude/skills/halo-component/scripts/shot.ps1 -Page toggle -NoBuild -Theme dark -SlowMo 5
+adb install -r -d app/build/outputs/apk/debug/app-debug.apk
+python3 -I .claude/skills/halo-component/scripts/halo.py shot toggle --no-build --theme dark --slowmo 5
 ```
 Record with `adb shell screenrecord --size 640x1428 --bit-rate 40000000 --time-limit 9 /sdcard/tide.mp4`.
 - Native 1280×2856 fails to encode, and the automatic fallback stretches to 720×1280.

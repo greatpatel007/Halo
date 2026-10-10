@@ -110,26 +110,27 @@ Register the page in `ShowroomCatalog.kt` under the marker comment.
 
 ### 6. Quality gate (loop until clean)
 ```bash
-python -I .claude/skills/halo-component/scripts/lint_ds.py <Name>
+python3 -I .claude/skills/halo-component/scripts/lint_ds.py <Name>
 ```
 ```bash
-powershell -ExecutionPolicy Bypass -File .claude/skills/halo-component/scripts/shot.ps1 -Page <id>
+python3 -I .claude/skills/halo-component/scripts/halo.py shot <id>
 ```
+(`halo.py` runs on Windows, macOS and Linux; on Windows use `python` instead of `python3`.)
 1. The lint must report **OK**.
-2. `shot.ps1` builds, installs, deep-links to `halo://showroom/<id>` and saves `shots/<id>.png`. **Read the PNG.**
+2. `halo.py shot` builds, installs, deep-links to `halo://showroom/<id>` and saves `shots/<id>.png`. **Read the PNG.**
 3. Review it against `references/pixel-perfect.md` and your archetype's checklist.
 4. Fix, then repeat. Report the result honestly: anything not verified (e.g. how a haptic feels) is listed as unverified.
 
 **Capturing interaction and motion states.** These are proven recipes; don't improvise coordinates or timing.
-- **Find, don't guess:** `scripts/find.ps1 -Desc "<accessibility label>"` prints an element's bounds and centre in device px.
+- **Find, don't guess:** `halo.py find "<accessibility label>"` prints an element's bounds and centre in device px.
   This only works because components ship real semantics, which is one more reason to get them right.
-- **Slow it down:** `shot.ps1 -Page <id> -NoBuild -SlowMo 5 [-Grid 8] [-Reduced]` passes deep-link params
+- **Slow it down:** `halo.py shot <id> --no-build --slowmo 5 [--grid 8] [--reduced] [--theme dark|light]` passes deep-link params
   (`?slowmo=5&grid=8&rm=1`) to the debug dock, so there's no dock tapping. At 5×, a 300ms spring lasts 1.5s and is easy to catch.
 - **Drive and capture on the device in one shell**, so the timings are device-side:
   `adb shell "input swipe X Y X Y 1800 & sleep 0.7; screencap -p /sdcard/a.png; sleep 0.8; screencap -p /sdcard/b.png"`, then `adb pull`.
   `input` takes about 0.3–0.5s to start, so add that to every sleep.
 - **Read the haptic log** in the captures. It shows which token fired and in what order (e.g. `Tick 0.7 → 0.9 → Threshold`).
-- **Fresh state:** `shot.ps1` without `-NoBuild` reinstalls, which kills the process. Use `adb shell am force-stop com.halo.wallet`
+- **Fresh state:** `halo.py shot` without `--no-build` reinstalls, which kills the process. Use `adb shell am force-stop com.halo.wallet`
   before reproducing a bug, so stale in-memory state from earlier captures can't mislead you.
 - **Capture every state in the spec matrix** (`shots/<id>-<state>.png`), at least: rest, pressed or engaged, mid-transition, and final.
 

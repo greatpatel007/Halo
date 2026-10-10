@@ -4,16 +4,21 @@ This is a frontend-showcase Bitcoin wallet. It demonstrates AI-built, hand-made 
 motion and micro-UX. It has no real backend, but the architecture is production-grade: swapping the fakes in
 `:core:data` for real implementations is all a backend needs.
 
-## Build & run (Windows)
-- Gradle needs Studio's JBR. Set `JAVA_HOME` in the command, never in `gradle.properties`:
-  `$env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"; .\gradlew.bat :app:assembleDebug`
-- Unit tests: `.\gradlew.bat :core:domain:test`
-- Design-system lint: `python -I .claude/skills/halo-component/scripts/lint_ds.py`
-- Build + install + open a Showroom page + screenshot:
-  `powershell -ExecutionPolicy Bypass -File .claude/skills/halo-component/scripts/shot.ps1 -Page <id>`
-  - Pages are `halo://showroom/<id>`. Debug params: `?slowmo=5&grid=8&rm=1`.
-  - Find an element's coordinates with `scripts/find.ps1 -Desc "<label>"`.
-- Emulator: AVD `Pixel_10_Pro` (1280×2856, 480 dpi = 3.0 px/dp). It can't vibrate; check haptics in the on-screen haptic log.
+## Build & run (Windows, macOS, Linux)
+All tooling goes through one stdlib-only Python CLI, `.claude/skills/halo-component/scripts/halo.py`
+(below, `halo.py`; run it as `python3 -I <path>` on macOS/Linux and `python -I <path>` on Windows). It finds the
+JDK (`$JAVA_HOME`, else Android Studio's bundled JBR) and the SDK (`$ANDROID_HOME`, `local.properties`, else the OS
+default location) by itself. Never put machine-specific paths in `gradle.properties`.
+- Check the discovered toolchain: `halo.py doctor`
+- Build: `halo.py gradle :app:assembleDebug` (any Gradle args are passed through to `gradlew` / `gradlew.bat`)
+- Unit tests: `halo.py gradle :core:domain:test`
+- Design-system lint: `python3 -I .claude/skills/halo-component/scripts/lint_ds.py`
+- Build + install + open a Showroom page + screenshot: `halo.py shot <id>` → `shots/<id>.png`
+  - Pages are `halo://showroom/<id>`. Debug params: `?slowmo=5&grid=8&rm=1` (`--slowmo 5 --grid 8 --reduced`).
+  - Find an element's coordinates with `halo.py find "<label>"`.
+  - Pixel review: `halo.py zoom shots/<id>.png <x> <y> --w 300 --h 160 --scale 4`.
+- Emulator: AVD `Pixel_10_Pro` (1280×2856, 480 dpi = 3.0 px/dp); override with `--avd` or `$HALO_AVD`. It can't
+  vibrate; check haptics in the on-screen haptic log.
 
 ## Modules
 `build-logic/convention` holds the convention plugins (`halo.android.application|library|compose|feature`, `halo.hilt`, `halo.jvm.library`).

@@ -3,8 +3,8 @@
 Halo design-system lint — the static half of the halo-component quality gate.
 
 Usage (from the repo root):
-    python -I .claude/skills/halo-component/scripts/lint_ds.py            # whole design system
-    python -I .claude/skills/halo-component/scripts/lint_ds.py HaloButton # one component
+    python3 -I .claude/skills/halo-component/scripts/lint_ds.py            # whole design system
+    python3 -I .claude/skills/halo-component/scripts/lint_ds.py HaloButton # one component
 
 Suppress a finding on one line with a trailing comment that states why:
     val x = 3.dp // lint-ignore: dp-literal optical nudge for the bolt glyph

@@ -118,7 +118,7 @@ tiles rise (1.03) and ignite.
     same SDF shader. Procedural wood is rejected.
   - Downloads need the owner's approval at the time.
 - **Quality bar:** pixel-perfect with *no single flawed dot*. Every slice gets a zoomed pixel review of edges, corners,
-  gradients and seams in both themes (`scripts/zoom.ps1`), on top of the full-screen review.
+  gradients and seams in both themes (`halo.py zoom`), on top of the full-screen review.
 
 ## What this changes
 1. **Build order:** the SDF lighting shader is the foundation of *every* reference. Build it first, inside a vertical
