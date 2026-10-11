@@ -30,9 +30,15 @@ fun <Name>(
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val colors = <name>Colors(variant, enabled)      // resolve tokens once
     val motion = HaloTheme.motion
-    val haptics = HaloTheme.haptics
+    val haptics = HaloTheme.haptics            // haptics + sound: haptics.perform(HaloHaptic.X, pan)
+    val light = HaloTheme.light                // world-fixed key light: read x/y/z only in draw
+    val hdr = HaloTheme.hdr                    // emitted light × hdr.emission, in draw only
     // Animated values: Animatable / animate*AsState with motion.spring(HaloSpring.X)
     // Read them ONLY inside graphicsLayer {}, offset {}, drawBehind {} lambdas.
+    // Continuous motion (Ambient archetype): never a frame loop of your own. Use
+    //   val ambient = rememberAmbient(HaloTheme.runtime, enabled = !motion.reduced) { dt -> model.step(dt); model.isBusy }
+    // attach ambient.visibility to the element, and subscribe sensors via HaloTheme.runtime.sensors while
+    // ambient.running (see SKILL.md → Runtime quick reference).
     HaloPressable(
         onClick = onClick,
         enabled = enabled,

@@ -1,6 +1,6 @@
 # Proposal 0003: Halo runtime, system-like services behind the theme
 
-**Status:** Accepted, steps 1–4 built (2026-10-11) · **Raised by:** product direction: "one engine that handles all the
+**Status:** Done (2026-10-11): steps 1–5 built · **Raised by:** product direction: "one engine that handles all the
 nitty-gritty of the experience, so every component talks to a single internal API, like a system."
 
 ## Problem
@@ -67,3 +67,9 @@ serves previews and tests. It lives in `:core:designsystem` until non-UI code ne
 - A suspected "slow page after navigating from home" was a harness artefact (dropped injected gestures, measuring the
   wrong screen under capture load); with verified navigation the page runs at 61 frames/s, 30 steps/s, and leaving home
   stops its effect (0 frames on the Color page).
+
+## Step 5 (2026-10-11)
+The `halo-component` skill is restructured around the runtime: non-negotiables split into **Craft** (1–8) and
+**Experience** (9–16, incl. sensors only from the hub and a short form while conserving), a **Runtime quick reference**
+with working code, a new **Ambient** archetype with its checklist, runtime notes in the component and page templates,
+and the skill's description now names the runtime so it loads for living/animated elements. `CLAUDE.md` matches.

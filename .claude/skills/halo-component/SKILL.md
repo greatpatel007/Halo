@@ -1,6 +1,6 @@
 ---
 name: halo-component
-description: Builds a production-grade, hand-made Jetpack Compose component for the Halo Bitcoin-wallet design system from a written requirement — spec, implementation, physics-based motion choreography, designed haptics and sound, world-fixed lighting and HDR emission, accessibility, Showroom page and registry entry, verified on a device screenshot. Use whenever the user asks to create, build, design or add a UI component, control, micro-interaction or animated element to Halo (e.g. "build a hold-to-send button", "add an amount keypad", "make the balance roll like an odometer"), or invokes /halo-component.
+description: Builds a production-grade, hand-made Jetpack Compose component for the Halo Bitcoin-wallet design system from a written requirement — spec, implementation, physics-based motion choreography, designed haptics and sound, world-fixed lighting and HDR emission, built on the shared Halo runtime (policy, frame clock, sensors), accessibility, Showroom page and registry entry, verified on a device screenshot. Use whenever the user asks to create, build, design or add a UI component, control, micro-interaction, animated or living (ambient) element to Halo (e.g. "build a hold-to-send button", "add an amount keypad", "make the balance roll like an odometer"), or invokes /halo-component.
 argument-hint: "[ComponentName] [requirements…]"
 ---
 
@@ -29,6 +29,7 @@ tilt, and anything that emits light glows past white on HDR screens. All of that
 
 ## Non-negotiables
 
+### Craft
 1. **Foundations only.** Use Compose `ui`/`foundation`/`animation`/`graphics` and `com.halo.core.designsystem.foundation.*`.
    No Material/Material3, no ripple, no Lottie/Haze/Accompanist or any other third-party UI library.
 2. **Tokens only.** All values come from the theme:
@@ -36,7 +37,9 @@ tilt, and anything that emits light glows past white on HDR screens. All of that
    - type: `HaloTheme.typography`
    - layout: `.spacing`, `.sizes`, `.radius`, `.stroke` and `.effects`
    - motion: `HaloTheme.motion.spring(HaloSpring.X)`, `.fade()` and `.timed()`
-   - haptics: `HaloTheme.haptics.perform(HaloHaptic.X)`
+   - haptics + sound: `HaloTheme.haptics.perform(HaloHaptic.X, pan)`
+   - scene: `HaloTheme.light` (world-fixed) and `HaloTheme.hdr` (emission), both read in draw only
+   - system services: `HaloTheme.runtime` (policy, clock, sensors, scene), never the platform APIs
 
    If a value you need doesn't exist, **add a token**: edit `theme/*.kt` and `references/tokens.md`, and say so in
    the report. Never hard-code a literal. The lint enforces this.
@@ -68,6 +71,10 @@ tilt, and anything that emits light glows past white on HDR screens. All of that
    - Lighting is physical: one scene light (key light top-left). Depth comes from tone, rims, emission and
      light-caused shadows (contact/AO). Decorative drop shadows are banned.
 
+### Experience (the runtime: `HaloTheme.runtime`, proposal 0003)
+Components never touch lifecycle, power, thermal, sensor, vibration or audio APIs. They ask the runtime, which owns
+one policy, one frame clock, one sensor hub, the scene and the feedback engine for the whole app.
+
 9. **Physics first (Apple's motion guidance).** Model motion on the real thing: springs (critically damped for
    mass, underdamped only where a bounce is physical), momentum and viscosity, inertia. The touched control answers
    on the next frame; the consequence grows out of it (cause → effect). If a motion has an analytic trajectory,
@@ -90,29 +97,66 @@ tilt, and anything that emits light glows past white on HDR screens. All of that
 13. **Continuous motion goes through the runtime.** Anything that animates without input registers with
     `rememberAmbient(HaloTheme.runtime, enabled) { dt -> …; busy }` and attaches `ambient.visibility` to its element.
     The runtime's clock steps it only while it is visible, the app is foregrounded and the policy allows (no reduced
-    motion, battery saver or heat), at full rate while busy and ~30 fps when calm, nothing when still. Never write
-    your own frame loop, lifecycle, power or thermal checks. Motion sensors come only from
-    `HaloTheme.runtime.sensors.subscribe(HaloSensor.X, onStop = { settle }) { values, t -> … }`, subscribed while
-    `ambient.running` (one shared listener per sensor; the hub stops them in the background, battery saver, heat or
-    reduced motion). Never register a `SensorManager` listener yourself. Measure it: frames over
-    5 s visible / scrolled away / backgrounded / reduced motion, and report the numbers. Sensors (gyroscope,
-    gravity) follow the same rules at ~30 Hz.
+    motion, battery saver or heat), at full rate while busy and ~30 steps/s when calm, nothing when still. Never
+    write your own frame loop, lifecycle, power or thermal checks. Measure it: frames over 5 s visible / scrolled
+    away / backgrounded / reduced motion (and `thermalservice override-status 3`), and report the numbers.
 14. **Prove the physics.** Pure models (dynamics, trajectories, haptic plans, synthesised sound) live in plain
     Kotlin and get unit tests in `core/designsystem/src/test` (e.g. `FluidFlowTest`, `TideFeedbackTest`,
     `TideClarityTest`). New sounds are measured (spectrum share, stereo correlation, peak), not only listened to.
+15. **Sensors come from the hub.** `HaloTheme.runtime.sensors.subscribe(HaloSensor.X, onStop = { settle }) { v, t -> }`,
+    subscribed only while `ambient.running`. One shared listener per sensor at ~30 Hz; the hub stops it in the
+    background, battery saver, heat or reduced motion and calls `onStop`. Never register a `SensorManager` listener.
+16. **Respect conserving power.** Long decorative feedback and emission need a short/plain form for
+    `runtime.policy.conserving` (battery saver or heat): the Tide plays only its launch, HDR returns to standard
+    range. Discrete feedback for a user action always plays.
+
+## Runtime quick reference
+```kotlin
+val runtime = HaloTheme.runtime
+val haptics = HaloTheme.haptics
+val light = HaloTheme.light            // read x/y/z/shadowDx/Dy only in draw
+val hdr = HaloTheme.hdr                // read emission only in draw
+
+// A living element: stepped by the shared clock only while visible and allowed.
+val model = remember { MyPhysics() }   // pure Kotlin, unit-tested
+val ambient = rememberAmbient(runtime, enabled = !HaloTheme.motion.reduced) { dt ->
+    model.step(dt)
+    model.isBusy                       // true → every frame; false → ~30 steps/s
+}
+
+// A sensor, shared and policy-gated, only while running.
+DisposableEffect(ambient.running) {
+    val sub = if (ambient.running) {
+        runtime.sensors.subscribe(HaloSensor.Gyroscope, onStop = { model.settle() }) { v, _ -> model.spin = -v[2] }
+    } else null
+    onDispose { sub?.close() }
+}
+
+Spacer(
+    Modifier.size(box).then(ambient.visibility).drawBehind {
+        shader.setFloatUniform("light", light.x, light.y, light.z)   // draw phase: tilt redraws, never recomposes
+        shader.setFloatUniform("hdr", hdr.emission)                  // emitted light only
+        shader.setFloatUniform("phase", model.phase)                 // snapshot state written by step()
+        drawRect(brush)
+    },
+)
+// On the user action: haptics.perform(HaloHaptic.Ping, pan = xOnScreen * 2f - 1f)
+```
+Reference implementation: `component/HaloLogo.kt`. Check it live on Showroom → Foundations → **Runtime**.
 
 ## Workflow
 
 ### 0. Load context (always)
 Read `references/tokens.md`, `docs/components/REGISTRY.md` and your archetype's section in `references/archetypes.md`.
-Skim `references/motion-recipes.md` for the patterns you'll need.
+Skim `references/motion-recipes.md` and `references/haptics.md` for the patterns you'll need; for anything continuous
+or sensor-driven, read `docs/proposals/0003-halo-runtime.md`.
 
 ### 1. Design read
 Before the line below, answer in one sentence each: *what real object or material is this, what physics moves it,
 what does touching it feel and sound like, does it emit light?* Then state one line: `<Name> · <archetype> · <job> · <signature moment>`. Example:
 `HaloHoldToSend · Gesture-commit · confirms a payment with a deliberate hold · the fill charges with a rising haptic and bursts into a check`.
 
-Archetypes: **Pressable, Toggle, Input, Value display, Gesture-commit, Container/Overlay, Feedback.**
+Archetypes: **Pressable, Toggle, Input, Value display, Gesture-commit, Container/Overlay, Feedback, Ambient.**
 Ask **at most one** question, and only if a wrong guess would waste the build. Otherwise write your assumptions into the spec.
 
 ### 2. Reuse check
@@ -166,7 +210,7 @@ python3 -I .claude/skills/halo-component/scripts/halo.py shot <id>
    phone's tier. The emulator plays sound but can't vibrate.
 6. Light: with a simulated tilt (`adb emu sensor set acceleration 6.5:7.3:0.81`, capture within ~0.6 s, reset to
    `0:9.77:0.81`) highlights and shadows move with no layout change.
-7. Continuous motion: report the frame counts (non-negotiable 13).
+7. Continuous motion: report the frame counts (non-negotiable 13), and check the Runtime lab (steps/s, sensors).
 8. Fix, then repeat. Report the result honestly: anything not verified (how a haptic feels on a real actuator,
    HDR on an HDR screen, 120 Hz feel) is listed as unverified.
 

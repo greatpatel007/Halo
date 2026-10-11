@@ -56,6 +56,9 @@ default location) by itself. Never put machine-specific paths in `gradle.propert
   action plays one `HaloHaptic` token (haptic + synthesised sound, rendered per actuator tier; only `feedback/` touches
   vibration/audio APIs). Continuous animation runs only while visible, foregrounded, outside battery saver and
   reduced motion. Physics and feedback models are unit-tested (`halo.py gradle :core:designsystem:testDebugUnitTest`).
+- Components reach the system only through `HaloTheme.runtime` (proposal 0003): continuous motion via
+  `rememberAmbient`, sensors via `runtime.sensors`, power/thermal/lifecycle via `runtime.policy`. Never register sensors,
+  read lifecycle/power/thermal state or write a frame loop in a component. Live view: Showroom → Foundations → Runtime.
 
 ## Docs
 - Tokens and design rules: `.claude/skills/halo-component/references/` (tokens, motion recipes, haptics,

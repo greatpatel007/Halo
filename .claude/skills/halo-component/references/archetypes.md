@@ -136,3 +136,26 @@ A hybrid (e.g. a toggle chip) satisfies the checklists of **both** archetypes.
 **Checklist:**
 - [ ] Particles and pulses are removed under `motion.reduced`.
 - [ ] A toast doesn't block navigation or the dock.
+
+## Ambient
+*Living elements that move without input: the glass halo's liquid, a breathing glow, a particle field, a live chart's
+drift.* (Reference: `HaloLogo`.)
+
+**States:** running (calm / busy), paused (off screen, background, reduced motion, battery saver, heat), pressed or
+pushed if interactive.
+
+**Behaviour:**
+- A pure physics model (`step(dt)`, unit-tested) driven by `rememberAmbient`; it reports busy while it needs every
+  frame, so calm motion costs ~30 steps/s and stillness costs nothing.
+- Sensors (tilt, rotation) only from `runtime.sensors`, only while `ambient.running`, with `onStop` settling.
+- Lit by the world-fixed light; emitted light scaled by `hdr.emission`; both read in draw.
+- A short/plain form while `policy.conserving`.
+
+**Semantics:** decorative ones are `Role.Image` with a description; interactive ones are buttons with a click label
+that says what the touch does ("Push the liquid").
+
+**Checklist:**
+- [ ] Frames in 5 s: visible ≈ calm rate; scrolled away, background, reduced motion and simulated heat 0–1.
+- [ ] `dumpsys sensorservice`: its sensors are on only while it is visible and the app is foregrounded.
+- [ ] The Runtime lab shows it as a visible effect, and steps/s drop to 0 when it is hidden.
+- [ ] Reduced motion shows a still, complete image (nothing essential is lost).
