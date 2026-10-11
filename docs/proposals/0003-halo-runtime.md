@@ -1,6 +1,6 @@
 # Proposal 0003: Halo runtime, system-like services behind the theme
 
-**Status:** Accepted, steps 1–3 built (2026-10-11) · **Raised by:** product direction: "one engine that handles all the
+**Status:** Accepted, steps 1–4 built (2026-10-11) · **Raised by:** product direction: "one engine that handles all the
 nitty-gritty of the experience, so every component talks to a single internal API, like a system."
 
 ## Problem
@@ -18,7 +18,7 @@ sensor listeners. Policy changes would have to be made in several places, and no
 | **Sensors** (`HaloSensors`) | one listener per sensor (gravity, gyroscope), ref-counted, policy-gated; `onStop` lets subscribers settle | built |
 | **Scene** (`HaloScene`) | the world-fixed light (gravity from Sensors) and HDR state; HDR back to standard range while conserving | built |
 | **Feedback** | haptics + sound engine attached to the policy: event-driven sound etiquette (ringer, touch sounds); the Tide's rush and water shrink to the launch while conserving | built |
-| **Lab** | a Showroom "Runtime" panel: live policy, active effects, sensors, frame budget | step 4 |
+| **Lab** | Showroom → Foundations → Runtime: verdict, policy inputs, clock steps/s, sensors, light tilt, HDR, feedback | built |
 
 Tokens stay pure values; the runtime is services. Pure parts (scheduler, models) are unit-tested; a fake runtime
 serves previews and tests. It lives in `:core:designsystem` until non-UI code needs it.
@@ -55,3 +55,15 @@ serves previews and tests. It lives in `:core:designsystem` until non-UI code ne
 - Emulator: battery saver → logo 1 frame/5 s, gyro 0 / gravity 0; two theme flips under saver with no crash; saver off
   → sensors back (gyro 1 / gravity 1) and motion resumes. Calm frame counts on this emulator vary with host load
   (≈50–190 per 5 s); hidden / background / saver are consistently 0–1.
+
+## Step 4 results (2026-10-11)
+- `RuntimePage` (Showroom → Foundations → Runtime) reads everything from `HaloTheme.runtime`; the clock gained a
+  steps-per-second meter (one state write per second, only while running); `HaloHaptics.audioLatencyMs` exposed.
+- Verified live: normal → "Ambient motion and sensors may run", gravity + gyroscope on; battery saver → "Ambient
+  paused: battery saver", "conserving: HDR off, short Tide", steps/s 0, both sensors off.
+- **Bug found and fixed:** at exactly 60 Hz two frames sum to 0.0333… s, which can fall a hair under the 1/30 s calm
+  threshold in floating point, so calm effects stepped at 20/s instead of 30/s. A small tolerance fixes it
+  (`AmbientSchedulerTest` asserts 300 calm steps per 10 s at 60 Hz). Clock frame log: 61 frames/s, 30 steps/s.
+- A suspected "slow page after navigating from home" was a harness artefact (dropped injected gestures, measuring the
+  wrong screen under capture load); with verified navigation the page runs at 61 frames/s, 30 steps/s, and leaving home
+  stops its effect (0 frames on the Color page).

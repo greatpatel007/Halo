@@ -35,6 +35,10 @@ class AmbientSchedulerTest {
         assertTrue("calm steps $steps", steps in 30..31)
         // No time is lost or invented: physics time equals real time.
         assertEquals(2f, time, 0.02f)
+        // At exactly 60 Hz the calm rate is 30/s (every second frame), never 20/s from float rounding.
+        steps = 0
+        repeat(600) { s.frame(1f / 60f) }
+        assertTrue("calm steps over 10 s: $steps", steps in 299..301)
     }
 
     @Test

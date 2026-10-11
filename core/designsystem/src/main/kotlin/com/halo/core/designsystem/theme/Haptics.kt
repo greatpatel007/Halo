@@ -62,6 +62,9 @@ class HaloHaptics internal constructor(
     /** What the actuator reported when probed. */
     val capabilities: HapticCapabilities get() = engine.capabilities
 
+    /** Measured audio output latency (ms), −1 until a sound has played. Not snapshot state: read it on demand. */
+    val audioLatencyMs: Float get() = engine.audioLatencyMs
+
     /** In-app switches; the system settings still apply on top. */
     var hapticsEnabled: Boolean
         get() = engine.hapticsEnabled

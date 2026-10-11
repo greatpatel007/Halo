@@ -179,6 +179,12 @@ python3 -I .claude/skills/halo-component/scripts/halo.py shot <id>
   `adb shell "input swipe X Y X Y 1800 & sleep 0.7; screencap -p /sdcard/a.png; sleep 0.8; screencap -p /sdcard/b.png"`, then `adb pull`.
   `input` takes about 0.3–0.5s to start, so add that to every sleep.
 - **Read the haptic log** in the captures. It shows which token fired and in what order (e.g. `Tick 0.7 → 0.9 → Threshold`).
+- **Continuous animation vs tooling:** uiautomator (`halo.py find`) waits for the UI to go idle, so a screen with a
+  running ambient effect makes dumps fail intermittently, and injected taps/swipes right after launch can be dropped.
+  Retry dumps, open pages by deep link (`am start -d halo://showroom/<id>` pushes onto the running app), and **verify
+  what is on screen before measuring** (a measurement on the wrong screen looks like a performance bug).
+- **Runtime lab:** the Showroom **Runtime** page shows the policy verdict and inputs, the clock's live steps/s, active
+  sensors, the light's tilt, HDR and feedback state: use it to check a new continuous effect behaves.
 - **Fresh state:** `halo.py shot` without `--no-build` reinstalls, which kills the process. Use `adb shell am force-stop com.halo.wallet`
   before reproducing a bug, so stale in-memory state from earlier captures can't mislead you.
 - **Capture every state in the spec matrix** (`shots/<id>-<state>.png`), at least: rest, pressed or engaged, mid-transition, and final.

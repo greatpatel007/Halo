@@ -5,6 +5,7 @@ import com.halo.feature.showroom.pages.ColorPage
 import com.halo.feature.showroom.pages.DepthPage
 import com.halo.feature.showroom.pages.HapticsPage
 import com.halo.feature.showroom.pages.IconsPage
+import com.halo.feature.showroom.pages.RuntimePage
 import com.halo.feature.showroom.pages.MotionPage
 import com.halo.feature.showroom.pages.SpacingPage
 import com.halo.feature.showroom.pages.TypePage
@@ -40,6 +41,7 @@ object ShowroomCatalog {
         ShowroomPage("motion", "Motion", "Spring tokens, curves, choreography", ShowroomSection.Foundations) { MotionPage() },
         ShowroomPage("haptics", "Haptics", "Haptics & sound lab · tiers per phone", ShowroomSection.Foundations) { HapticsPage() },
         ShowroomPage("icons", "Icons", "24dp grid, 1.75 stroke", ShowroomSection.Foundations) { IconsPage() },
+        ShowroomPage("runtime", "Runtime", "Policy · clock · sensors · scene · feedback, live", ShowroomSection.Foundations) { RuntimePage() },
         // halo-component: component pages are registered below this line.
         ShowroomPage("button", "Button", "4 variants · press morph · loading collapse", ShowroomSection.Components) { ButtonPage() },
         ShowroomPage("rolling-amount", "Rolling amount", "Odometer digits · sats / BTC / fiat · privacy", ShowroomSection.Components) { RollingAmountPage() },

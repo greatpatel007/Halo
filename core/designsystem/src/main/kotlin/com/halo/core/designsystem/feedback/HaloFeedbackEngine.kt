@@ -20,6 +20,9 @@ internal class HaloFeedbackEngine private constructor(context: Context) {
 
     val capabilities: HapticCapabilities get() = haptics.capabilities
 
+    /** Measured audio output latency (ms), −1 until measured. */
+    val audioLatencyMs: Float get() = sound.outputLatencyMs
+
     /** In-app switches (the system settings apply on top of these). */
     var hapticsEnabled by mutableStateOf(true)
     var soundEnabled by mutableStateOf(true)

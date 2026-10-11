@@ -69,7 +69,8 @@ internal class AmbientScheduler {
             return 0
         }
         pending += dt
-        if (!busy && pending < CALM_STEP_S) return 0
+        // The tolerance absorbs float rounding: two 60 Hz frames (0.0333…) must count as one calm step, not three.
+        if (!busy && pending < CALM_STEP_S - TOLERANCE_S) return 0
         val step = min(pending, MAX_STEP_S)
         pending = 0f
         var anyBusy = false
@@ -82,6 +83,7 @@ internal class AmbientScheduler {
         const val CALM_STEP_S = 1f / 30f
         /** Longest step, so a dropped frame never makes an effect jump. */
         const val MAX_STEP_S = 0.05f
+        private const val TOLERANCE_S = 0.001f
     }
 }
 
@@ -97,6 +99,10 @@ class HaloClock internal constructor(private val policy: HaloPolicy) {
     var activeEffects: Int by mutableIntStateOf(0)
         private set
 
+    /** Effect steps per second over the last second (0 while paused): the Showroom lab shows it. */
+    var stepRate: Int by mutableIntStateOf(0)
+        private set
+
     internal fun refreshCount() {
         activeEffects = scheduler.visibleCount
     }
@@ -107,14 +113,29 @@ class HaloClock internal constructor(private val policy: HaloPolicy) {
         val scale by rememberUpdatedState(timeScale)
         LaunchedEffect(this) {
             snapshotFlow { activeEffects > 0 && policy.ambientAllowed }.collectLatest { run ->
-                if (!run) return@collectLatest
+                if (!run) {
+                    stepRate = 0
+                    return@collectLatest
+                }
                 scheduler.reset()
                 var last = withFrameNanos { it }
-                while (true) {
-                    withFrameNanos { now ->
-                        scheduler.frame((now - last) / NANOS_PER_S / scale)
-                        last = now
+                var windowStart = last
+                var steps = 0
+                try {
+                    while (true) {
+                        withFrameNanos { now ->
+                            if (scheduler.frame((now - last) / NANOS_PER_S / scale) > 0) steps++
+                            last = now
+                            // Metering: one state write per second, only while running.
+                            if (now - windowStart >= 1_000_000_000L) {
+                                stepRate = steps
+                                steps = 0
+                                windowStart = now
+                            }
+                        }
                     }
+                } finally {
+                    stepRate = 0
                 }
             }
         }
