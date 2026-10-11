@@ -49,7 +49,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntSize
 import androidx.core.view.WindowCompat
+import com.halo.core.designsystem.feedback.HaloFeedbackEngine
+import com.halo.core.designsystem.feedback.TideTrajectory
 import com.halo.core.designsystem.foundation.material.TIDE_AGSL
+import com.halo.core.designsystem.theme.HaloHaptics
 import com.halo.core.designsystem.theme.HaloMotion
 import com.halo.core.designsystem.theme.HaloSpring
 import com.halo.core.designsystem.theme.HaloTheme
@@ -121,6 +124,10 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
     private var outbound = true
     /** Bumped by every reveal / reversal; only the latest owns clean-up. */
     private var generation = 0
+    /** Plays the wave's feedback (research 0002); set by the host. */
+    internal var haptics: HaloHaptics? = null
+    /** The running wave's sound and haptic rush, following the front. */
+    private var wave: HaloFeedbackEngine.TideHandle? = null
 
     /**
      * @param trigger bounds of the control in root coordinates. The wave starts at its centre, and the control
@@ -171,6 +178,8 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
             change()
             withTimeoutOrNull(SWITCH_TIMEOUT_MS) { snapshotFlow { isDark }.first { it == behindDark } }
             if (run != generation) return
+            // The water is released as the front launches: its feedback follows the same spring.
+            wave = haptics?.tide(toDark = behindDark, trajectory = TideTrajectory.launch(omega(motion), end - start, TIDE_KICK))
             sweep(end, TIDE_KICK * omega(motion) * (end - start), motion)
         } finally {
             if (run == generation) finish()
@@ -190,7 +199,13 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
             change()
             withTimeoutOrNull(SWITCH_TIMEOUT_MS) { snapshotFlow { isDark }.first { it == wanted } }
             if (run != generation) return
-            sweep(if (outbound) end else start, tide.velocity, motion)
+            val target = if (outbound) end else start
+            // Pulled back, the water keeps its energy: the feedback follows the reversed spring, no new launch.
+            wave?.reverse(
+                TideTrajectory(omega(motion), tide.value - target, tide.velocity, TIDE_KICK * omega(motion) * (end - start)),
+                toDark = wanted,
+            )
+            sweep(target, tide.velocity, motion)
         } finally {
             if (run == generation) finish()
         }
@@ -202,6 +217,8 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
             time = (System.nanoTime() - began) / NANOS_PER_S / motion.scale
             statusDark = if (value >= statusFlip) behindDark else aheadDark
             navDark = if (value >= navFlip) behindDark else aheadDark
+            // The water's sound sits where the front crosses the screen.
+            if (size.width > 0) wave?.pan(((origin.x + direction.x * value) / size.width).coerceIn(0f, 1f) * 2f - 1f)
         }
     }
 
@@ -214,6 +231,7 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
             leadFrames()
             change()
             withTimeoutOrNull(SWITCH_TIMEOUT_MS) { snapshotFlow { isDark }.first { it != from } }
+            haptics?.themeFade()
             animate(1f, 0f, animationSpec = motion.fade()) { value, _ -> fadeAlpha = value }
         } finally {
             if (run == generation) fadeFrame = null
@@ -224,6 +242,8 @@ class HaloThemeRevealState internal constructor(internal val layer: GraphicsLaye
     private suspend fun leadFrames() = repeat(TRIGGER_LEAD_FRAMES) { withFrameNanos { } }
 
     private fun finish() {
+        wave?.release()
+        wave = null
         active = false
         aheadFrame = null
         behindFrame = null
@@ -290,6 +310,7 @@ fun HaloThemeRevealHost(
     val state = remember(layer) { HaloThemeRevealState(layer) }
     val shader = remember { runCatching { RuntimeShader(TIDE_AGSL) }.getOrNull() }
     val effects = HaloTheme.effects
+    val haptics = HaloTheme.haptics
     val foam = HaloTheme.light.highlight.toArgb()
     val density = LocalDensity.current
     val band = with(density) { effects.tideBand.toPx() }
@@ -311,6 +332,7 @@ fun HaloThemeRevealHost(
     val navHeight = WindowInsets.navigationBars.getBottom(density)
     SideEffect {
         state.isDark = isDark
+        state.haptics = haptics
         state.supported = shader != null
         state.band = band
         state.margin = band + amplitude * MEANDER_REACH

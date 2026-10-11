@@ -23,8 +23,9 @@ REGISTRY = ROOT / "docs/components/REGISTRY.md"
 SPECS = ROOT / "docs/components"
 CATALOG = ROOT / "feature/showroom/src/main/kotlin/com/halo/feature/showroom/catalog/ShowroomCatalog.kt"
 
-# Folders allowed to hold raw values (they *define* the tokens).
-TOKEN_DIRS = {"theme", "icons"}
+# Folders allowed to hold raw values (they *define* the tokens). `feedback` is the platform layer behind the
+# haptic/sound tokens: the only place that may call vibration and audio APIs.
+TOKEN_DIRS = {"theme", "icons", "feedback"}
 
 BANNED_IMPORTS = [
     (r"^import androidx\.compose\.material3?\b", "material-import", "Material is not used: build the Halo equivalent from foundations."),

@@ -17,24 +17,37 @@ import com.halo.core.designsystem.foundation.HaloDepth
 import com.halo.core.designsystem.foundation.HaloPressable
 import com.halo.core.designsystem.foundation.HaloText
 import com.halo.core.designsystem.foundation.enterRise
+import com.halo.core.designsystem.feedback.HapticTier
 import com.halo.core.designsystem.theme.HaloHaptic
 import com.halo.core.designsystem.theme.HaloTheme
+import com.halo.feature.showroom.ui.Knob
 import com.halo.feature.showroom.ui.SectionLabel
 import com.halo.feature.showroom.ui.ShowroomCard
+import com.halo.feature.showroom.ui.SpecLine
 import com.halo.feature.showroom.ui.haloDepth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val usage = mapOf(
-    HaloHaptic.Tap to "Buttons, taps",
-    HaloHaptic.Tick to "Keypad, sliders, digit roll",
-    HaloHaptic.ToggleOn to "Switch on",
-    HaloHaptic.ToggleOff to "Switch off",
-    HaloHaptic.Threshold to "Swipe / hold commit point",
-    HaloHaptic.Confirm to "Success",
-    HaloHaptic.Reject to "Invalid input + shake",
-    HaloHaptic.Crescendo to "Hold-to-send charge",
-    HaloHaptic.Celebrate to "Payment sent",
+    HaloHaptic.Tap to "buttons · click",
+    HaloHaptic.Tick to "steps · tick",
+    HaloHaptic.ToggleOn to "on · click up",
+    HaloHaptic.ToggleOff to "off · click down",
+    HaloHaptic.Threshold to "commit · firm click",
+    HaloHaptic.Confirm to "success · chime",
+    HaloHaptic.Reject to "invalid · thud",
+    HaloHaptic.Crescendo to "charge · air",
+    HaloHaptic.Celebrate to "sent · arpeggio",
+    HaloHaptic.Tide to "theme · water rush",
+    HaloHaptic.Ping to "glass halo · tink",
+)
+
+private val tierInfo = mapOf(
+    HapticTier.Envelope to "Envelope: intensity + sharpness curves",
+    HapticTier.Primitives to "Primitives: OEM-tuned clicks, ticks, rises",
+    HapticTier.Amplitude to "Amplitude: synthesised waveforms",
+    HapticTier.Basic to "Basic motor: strong moments only",
+    HapticTier.None to "No vibrator: sound and log only",
 )
 
 @Composable
@@ -43,20 +56,45 @@ internal fun HapticsPage() {
     val scope = rememberCoroutineScope()
     val s = HaloTheme.spacing
 
-    ShowroomCard(Modifier.enterRise(0)) {
+    // ---- This phone: how Halo renders feedback here, and the in-app switches.
+    val caps = haptics.capabilities
+    SectionLabel("This phone", Modifier.enterRise(0))
+    ShowroomCard(Modifier.enterRise(1)) {
+        HaloText(tierInfo[haptics.tier].orEmpty(), style = HaloTheme.typography.subtitle)
+        Spacer(Modifier.height(s.md))
+        SpecLine("tier", haptics.tier.name.lowercase())
+        SpecLine("primitives", if (caps.primitives.isEmpty()) "none" else caps.primitives.keys.joinToString(" ") { it.name.lowercase() })
+        SpecLine("envelope", if (caps.envelope) "yes · ${caps.minControlPointMs}ms min point" else "no")
+        SpecLine("amplitude control", if (caps.amplitudeControl) "yes" else "no")
+        SpecLine("q factor", if (caps.qFactor.isNaN()) "unknown" else "%.1f".format(caps.qFactor))
+        Spacer(Modifier.height(s.lg))
+        Row(horizontalArrangement = Arrangement.spacedBy(s.xl)) {
+            Knob("Haptics", listOf(true, false), haptics.hapticsEnabled, { haptics.hapticsEnabled = it }, optionLabel = { if (it) "on" else "off" })
+            Knob("Sound", listOf(true, false), haptics.soundEnabled, { haptics.soundEnabled = it }, optionLabel = { if (it) "on" else "off" })
+        }
+        Spacer(Modifier.height(s.lg))
+        Knob(
+            "Strength · calibrate per phone",
+            listOf(0.6f, 0.8f, 1f, 1.2f, 1.4f),
+            haptics.strength,
+            { haptics.strength = it },
+            optionLabel = { "×%.1f".format(it) },
+        )
+        Spacer(Modifier.height(s.md))
         HaloText(
-            "The emulator can't vibrate — every token also lands in the haptic log (dock → log). Feel-test on an Android 13+ device.",
+            "Sound follows silent mode and the system touch-sounds setting. The emulator can't vibrate: every token also lands in the log (dock → log).",
             style = HaloTheme.typography.bodySmall,
             color = HaloTheme.colors.content.secondary,
         )
     }
 
-    SectionLabel("Tokens", Modifier.enterRise(1))
+    SectionLabel("Tokens · left tiles play left, right tiles right", Modifier.enterRise(2))
     Column(verticalArrangement = Arrangement.spacedBy(s.sm)) {
         HaloHaptic.entries.chunked(2).forEachIndexed { row, pair ->
-            Row(Modifier.enterRise(2 + row), horizontalArrangement = Arrangement.spacedBy(s.sm)) {
-                pair.forEach { token ->
-                    HapticTile(token.name, usage[token].orEmpty(), Modifier.weight(1f)) { haptics.perform(token) }
+            Row(Modifier.enterRise(3 + row), horizontalArrangement = Arrangement.spacedBy(s.sm)) {
+                pair.forEachIndexed { column, token ->
+                    val pan = if (column == 0) -0.6f else 0.6f
+                    HapticTile(token.name, usage[token].orEmpty(), Modifier.weight(1f)) { haptics.perform(token, pan) }
                 }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
@@ -64,7 +102,7 @@ internal fun HapticsPage() {
     }
 
     SectionLabel("Composed", Modifier.enterRise(8))
-    HapticTile("Charge", "10 ticks rising 0.1 → 1.0, then Threshold", Modifier.fillMaxWidth().enterRise(9)) {
+    HapticTile("Charge", "10 ticks rising in strength and pitch, then Threshold", Modifier.fillMaxWidth().enterRise(9)) {
         scope.launch {
             for (i in 1..10) {
                 haptics.tick(i / 10f)
