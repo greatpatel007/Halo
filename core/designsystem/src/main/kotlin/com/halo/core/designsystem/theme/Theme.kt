@@ -93,10 +93,10 @@ fun HaloTheme(
     content: @Composable () -> Unit,
 ) {
     val typography = remember { haloTypography() }
-    val haptics = rememberHaloHaptics(hapticObserver)
-    val hdr = rememberHaloHdr()
     val runtime = rememberHaloRuntime(reducedMotion = motion.reduced, timeScale = motion.scale)
-    val sceneLight = light ?: rememberKeyLight(colors.isDark, runtime)
+    val haptics = rememberHaloHaptics(hapticObserver, runtime)
+    val hdr = runtime.scene.hdr
+    val sceneLight = light ?: remember(colors.isDark, runtime) { haloKeyLight(colors.isDark, runtime.scene.rig) }
     val selection = remember(colors) {
         TextSelectionColors(
             handleColor = colors.accent.fill,

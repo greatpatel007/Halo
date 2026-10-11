@@ -211,6 +211,8 @@ tilt feel, 120 Hz).
 - **Runtime** (`runtime/`, proposal 0003): `HaloRuntime` (`HaloTheme.runtime`) = `HaloPolicy` (foreground, reduced
   motion, battery saver, thermal) + `HaloClock` / `rememberAmbient` (the one frame clock for continuous effects) +
   `HaloSensors` (shared, ref-counted gravity/gyroscope).
+  `HaloScene` (world-fixed light + HDR, limited while conserving power). Feedback takes its etiquette from the policy:
+  long decorative feedback must have a short form for `policy.conserving`; discrete action feedback always plays.
 - **Light & HDR** (`theme/`): `HaloLight` + `LightRig` + `rememberLightRig` (world-fixed tilt light), `HaloHdr`.
 - **Reference implementations, one per archetype built so far:**
   - `HaloButton` (Pressable: press morph, layout-phase collapse)

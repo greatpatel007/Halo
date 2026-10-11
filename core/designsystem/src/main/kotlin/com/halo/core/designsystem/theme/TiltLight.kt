@@ -1,17 +1,12 @@
 package com.halo.core.designsystem.theme
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
-import com.halo.core.designsystem.runtime.HaloRuntime
-import com.halo.core.designsystem.runtime.HaloSensor
 import kotlin.math.abs
 import kotlin.math.asin
 import kotlin.math.exp
 import kotlin.math.min
 import kotlin.math.sqrt
 
-/**
+/*
  * The scene light, fixed in the world (decision D6). A light in a room doesn't move when you turn your phone, so its
  * direction *relative to the screen* turns by the phone's rotation, exactly as gravity does. Tracking gravity gives
  * that rotation; applying it to the key light makes every highlight, rim and light-caused shadow shift together.
@@ -19,24 +14,9 @@ import kotlin.math.sqrt
  * Practicalities, not physics: the holding angle you settle into becomes "neutral" again over a few seconds (so the
  * light isn't permanently off when the phone lies flat), the swing is capped, and it is smoothed. Gravity comes from
  * the runtime's shared sensors, which already stop in the background, under reduced motion, battery saver or heat;
- * when they stop, the light returns to its designed direction.
+ * when they stop, the light returns to its designed direction. The runtime's scene (`HaloScene`) owns the rig and
+ * feeds it through [GravityFilter].
  */
-@Composable
-fun rememberKeyLight(dark: Boolean, runtime: HaloRuntime): HaloLight {
-    val rig = remember { LightRig() }
-    DisposableEffect(runtime) {
-        val filter = GravityFilter(rig)
-        val sub = runtime.sensors.subscribe(
-            HaloSensor.Gravity,
-            onStop = {
-                filter.reset()
-                rig.rotation = LightRotation.None
-            },
-        ) { values, time -> filter.onGravity(values, time) }
-        onDispose { sub.close() }
-    }
-    return remember(dark, rig) { haloKeyLight(dark, rig) }
-}
 
 /** Gravity → the rotation since the holding angle → [LightRig.rotation], smoothed. Pure: no platform calls. */
 internal class GravityFilter(private val rig: LightRig) {

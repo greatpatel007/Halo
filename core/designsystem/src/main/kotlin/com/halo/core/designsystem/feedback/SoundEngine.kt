@@ -3,12 +3,9 @@ package com.halo.core.designsystem.feedback
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioTimestamp
 import android.media.AudioTrack
 import android.os.Process
-import android.os.SystemClock
-import android.provider.Settings
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Semaphore
@@ -21,11 +18,14 @@ import kotlin.math.sin
  * after a moment of silence and the thread sleeps, so it costs nothing at rest.
  *
  * Etiquette, as on iOS: UI sounds follow the ringer (silent and vibrate mean no sound), the system "touch sounds"
- * setting and the in-app switch, and play as sonification (system volume).
+ * setting (both from the runtime policy, event-driven) and the in-app switch, and play as sonification (system volume).
  */
 internal class SoundEngine(context: Context) {
 
     @Volatile var enabled: Boolean = true
+
+    /** The runtime policy's sound etiquette (ringer normal and touch sounds on), pushed on every change. */
+    @Volatile var systemAllowed: Boolean = true
 
     /**
      * Measured time from writing a sample to it leaving the speaker (ms), from the track's own timestamps; −1 until
@@ -35,12 +35,9 @@ internal class SoundEngine(context: Context) {
         private set
 
     private val app = context.applicationContext
-    private val audio = app.getSystemService(AudioManager::class.java)
     private val buffers = ConcurrentHashMap<HaloSoundCue, FloatArray>()
     private val incoming = ConcurrentLinkedQueue<MixVoice>()
     private val wake = Semaphore(0)
-    @Volatile private var allowedUntil = 0L
-    @Volatile private var allowed = true
     private val thread = Thread(::mixLoop, "HaloSound").apply { isDaemon = true; start() }
 
     /** Renders [cues] ahead of time (off the main thread), so the first play has no synthesis cost. */
@@ -53,7 +50,7 @@ internal class SoundEngine(context: Context) {
 
     /** Plays a live voice (e.g. the Tide's water). Returns false when etiquette keeps it silent. */
     fun play(voice: MixVoice): Boolean {
-        if (!enabled || !systemAllows()) return false
+        if (!enabled || !systemAllowed) return false
         incoming += voice
         wake.release()
         return true
@@ -61,17 +58,6 @@ internal class SoundEngine(context: Context) {
 
     private fun buffer(cue: HaloSoundCue): FloatArray = buffers.getOrPut(cue) { SoundSynth.render(cue) }
 
-    /** Ringer mode and the system touch-sounds setting, re-read at most once a second. */
-    private fun systemAllows(): Boolean {
-        val now = SystemClock.uptimeMillis()
-        if (now > allowedUntil) {
-            val ringer = audio?.ringerMode ?: AudioManager.RINGER_MODE_NORMAL
-            val touchSounds = Settings.System.getInt(app.contentResolver, Settings.System.SOUND_EFFECTS_ENABLED, 1) != 0
-            allowed = ringer == AudioManager.RINGER_MODE_NORMAL && touchSounds
-            allowedUntil = now + ETIQUETTE_TTL_MS
-        }
-        return allowed
-    }
 
     /** A pre-rendered sound, equal-power panned. */
     private class Voice(val pcm: FloatArray, pan: Float) : MixVoice {
@@ -167,7 +153,6 @@ internal class SoundEngine(context: Context) {
         const val BLOCK_FRAMES = 192
         /** ~300 ms of silence before the track pauses. */
         const val IDLE_BLOCKS = 75
-        const val ETIQUETTE_TTL_MS = 1_000L
         const val QUARTER_PI = 0.7853982f
         const val STAMP_EVERY_BLOCKS = 25
         const val MAX_SANE_LATENCY_MS = 300f

@@ -6,6 +6,7 @@ import android.view.View
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.halo.core.designsystem.runtime.HaloPolicy
 import com.halo.core.designsystem.theme.HaloHaptic
 
 /**
@@ -32,6 +33,20 @@ internal class HaloFeedbackEngine private constructor(context: Context) {
         }
     private var strengthState by mutableStateOf(1f)
 
+    /** Battery saver or heat: long decorative feedback (the Tide's rush and water) shrinks to its launch. */
+    @Volatile private var conserving = false
+    private var policy: HaloPolicy? = null
+
+    /** Takes sound etiquette and power policy from the runtime (event-driven; the engine never polls the system). */
+    fun attach(policy: HaloPolicy) {
+        if (this.policy === policy) return
+        this.policy = policy
+        policy.addListener {
+            sound.systemAllowed = policy.soundAllowed
+            conserving = policy.conserving
+        }
+    }
+
     init {
         sound.prepare(HaloHaptic.entries.mapNotNull { Patterns.of(it).sound } + (0..10).mapNotNull { Patterns.tick(it / 10f).sound })
     }
@@ -54,15 +69,25 @@ internal class HaloFeedbackEngine private constructor(context: Context) {
      * it. The handle retargets both on a reversal and releases them when the wave is over.
      */
     fun startTide(toDark: Boolean, trajectory: TideTrajectory, view: View): TideHandle {
+        if (conserving) {
+            // Conserving power: just the release (a short hit and thud), no rush, no live water voice.
+            play(Patterns.TideLaunch, view)
+            return TideHandle(null, view, toDark, rush = false)
+        }
         val voice = TideVoice(toDark, trajectory)
         if (hapticsEnabled) haptics.play(capabilities.tidePlan(trajectory, toDark, launch = true), view)
         sound.enabled = soundEnabled
         val playing = sound.play(voice)
-        return TideHandle(if (playing) voice else null, view, toDark)
+        return TideHandle(if (playing) voice else null, view, toDark, rush = true)
     }
 
     /** A running Tide's feedback. */
-    inner class TideHandle internal constructor(private val voice: TideVoice?, private val view: View, private var toDark: Boolean) {
+    inner class TideHandle internal constructor(
+        private val voice: TideVoice?,
+        private val view: View,
+        private var toDark: Boolean,
+        private val rush: Boolean,
+    ) {
         /** Places the water's sound: −1 left … +1 right (the front's position across the screen). */
         fun pan(value: Float) {
             voice?.pan = value.coerceIn(-1f, 1f)
@@ -71,6 +96,7 @@ internal class HaloFeedbackEngine private constructor(context: Context) {
         /** A mid-wave reversal: the water is pulled back, keeping its energy (no new launch hit). */
         fun reverse(trajectory: TideTrajectory, toDark: Boolean) {
             this.toDark = toDark
+            if (!rush) return
             haptics.cancel()
             if (hapticsEnabled) haptics.play(capabilities.tidePlan(trajectory, toDark, launch = false), view)
             voice?.retarget(trajectory)

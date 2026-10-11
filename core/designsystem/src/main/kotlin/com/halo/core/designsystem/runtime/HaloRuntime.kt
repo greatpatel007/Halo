@@ -9,6 +9,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.halo.core.designsystem.theme.rememberHaloHdr
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
 /**
@@ -16,6 +17,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
  * - [policy]: may ambient motion, sensors and decoration run (foreground, reduced motion, battery saver, thermal)?
  * - [clock]: the single frame clock for continuous effects ([rememberAmbient]).
  * - [sensors]: one shared listener per motion sensor, ref-counted and gated by the policy.
+ * - [scene]: the world-fixed light and HDR state.
+ * - feedback: haptics and sound (`HaloTheme.haptics`) take their etiquette from [policy].
  *
  * Components reach it through `HaloTheme.runtime` and never touch lifecycle, power or thermal APIs themselves.
  */
@@ -24,10 +27,11 @@ class HaloRuntime internal constructor(sensorSource: SensorSource = NoSensors) {
     val policy = HaloPolicy()
     val clock = HaloClock(policy)
     val sensors = HaloSensors(sensorSource)
+    val scene = HaloScene(policy, sensors)
 
     init {
         // Sensors follow the policy at once: off in the background, under reduced motion, battery saver or heat.
-        policy.onChange = { sensors.setAllowed(policy.ambientAllowed) }
+        policy.addListener { sensors.setAllowed(policy.ambientAllowed) }
     }
 }
 
@@ -66,5 +70,6 @@ fun rememberHaloRuntime(reducedMotion: Boolean, timeScale: Float): HaloRuntime {
         onDispose { watcher.stop() }
     }
     runtime.clock.Drive(timeScale)
+    rememberHaloHdr(runtime.scene.hdr)
     return runtime
 }

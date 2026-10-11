@@ -13,6 +13,7 @@ import com.halo.core.designsystem.feedback.HapticCapabilities
 import com.halo.core.designsystem.feedback.HapticTier
 import com.halo.core.designsystem.feedback.Patterns
 import com.halo.core.designsystem.feedback.TideTrajectory
+import com.halo.core.designsystem.runtime.HaloRuntime
 
 /** The haptic vocabulary. Components pick a token; never call the platform APIs directly. */
 enum class HaloHaptic {
@@ -119,11 +120,12 @@ private const val PREVIEW_KICK = 0.5f
  * on-screen feedback log, since the emulator cannot vibrate.
  */
 @Composable
-fun rememberHaloHaptics(observer: ((HaloHaptic, Float) -> Unit)? = null): HaloHaptics {
+internal fun rememberHaloHaptics(observer: ((HaloHaptic, Float) -> Unit)?, runtime: HaloRuntime): HaloHaptics {
     val view = LocalView.current
     val context = LocalContext.current
     val currentObserver by rememberUpdatedState(observer)
-    return remember(view, context) {
-        HaloHaptics(view, HaloFeedbackEngine.get(context)) { haptic, intensity -> currentObserver?.invoke(haptic, intensity) }
+    return remember(view, context, runtime) {
+        val engine = HaloFeedbackEngine.get(context).also { it.attach(runtime.policy) }
+        HaloHaptics(view, engine) { haptic, intensity -> currentObserver?.invoke(haptic, intensity) }
     }
 }
