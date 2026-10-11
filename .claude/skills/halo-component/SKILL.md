@@ -87,9 +87,11 @@ tilt, and anything that emits light glows past white on HDR screens. All of that
 12. **Emitted light uses HDR.** If the component *emits* light (glow, liquid, sparks, foam), scale only the emitted
     part by `HaloTheme.hdr.emission` (read in draw; 1 on SDR) and keep everything else in standard range. Reflected
     light (highlights, surfaces, text) is never boosted. `haloGlow` already does this.
-13. **Continuous motion is gated.** Anything that animates without input runs only while it is visible
-    (`onGloballyPositioned` + `boundsInWindow`), the lifecycle is ≥ STARTED, battery saver is off and reduced motion
-    is off; it drops to ~30 fps when calm (skip state writes) and writes nothing when still. Measure it: frames over
+13. **Continuous motion goes through the runtime.** Anything that animates without input registers with
+    `rememberAmbient(HaloTheme.runtime, enabled) { dt -> …; busy }` and attaches `ambient.visibility` to its element.
+    The runtime's clock steps it only while it is visible, the app is foregrounded and the policy allows (no reduced
+    motion, battery saver or heat), at full rate while busy and ~30 fps when calm, nothing when still. Never write
+    your own frame loop, lifecycle, power or thermal checks; gate extras (sensors) on `ambient.running`. Measure it: frames over
     5 s visible / scrolled away / backgrounded / reduced motion, and report the numbers. Sensors (gyroscope,
     gravity) follow the same rules at ~30 Hz.
 14. **Prove the physics.** Pure models (dynamics, trajectories, haptic plans, synthesised sound) live in plain
@@ -203,6 +205,8 @@ tilt feel, 120 Hz).
   - `HaloThemeRevealHost` / the Tide (theme transition with live feedback)
 - **Feedback** (`core/designsystem/.../feedback`): `HaloPattern` + `Patterns` (tokens), `HapticPlan` (tiers),
   `HapticPlayer`, `SoundSynth` + `SoundEngine`, `TideFeedback` / `TideSound` (live feedback from a trajectory).
+- **Runtime** (`runtime/`, proposal 0003): `HaloRuntime` (`HaloTheme.runtime`) = `HaloPolicy` (foreground, reduced
+  motion, battery saver, thermal) + `HaloClock` / `rememberAmbient` (the one frame clock for continuous effects).
 - **Light & HDR** (`theme/`): `HaloLight` + `LightRig` + `rememberLightRig` (world-fixed tilt light), `HaloHdr`.
 - **Reference implementations, one per archetype built so far:**
   - `HaloButton` (Pressable: press morph, layout-phase collapse)

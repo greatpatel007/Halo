@@ -6,7 +6,6 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.os.PowerManager
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -20,14 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -36,8 +32,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -45,18 +39,16 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.halo.core.designsystem.foundation.HaloPreview
 import com.halo.core.designsystem.foundation.HaloPressable
 import com.halo.core.designsystem.foundation.material.SDF_COMMON
 import com.halo.core.designsystem.foundation.rememberPressProgress
+import com.halo.core.designsystem.runtime.rememberAmbient
 import com.halo.core.designsystem.theme.HaloHaptic
 import com.halo.core.designsystem.theme.HaloSpring
 import com.halo.core.designsystem.theme.HaloTheme
 import kotlin.math.abs
 import kotlin.math.exp
-import kotlin.math.min
 
 enum class HaloLogoSize { Medium, Large }
 
@@ -93,10 +85,14 @@ fun HaloLogo(
     val glow = remember { Animatable(if (live) 0f else 1f) }
     val press = rememberPressProgress(source)
 
-    var visible by remember { mutableStateOf(false) }
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val lifecycleState by lifecycle.currentStateFlow.collectAsState()
-    val running = live && visible && lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    // The liquid's clock and gating come from the runtime: it steps only while the mark is visible, the app is in
+    // the foreground and neither reduced motion, battery saver nor heat forbids it; calm flow runs at ~30 fps.
+    val runtime = HaloTheme.runtime
+    val ambient = rememberAmbient(runtime, enabled = live) { dt ->
+        flow.step(dt)
+        abs(flow.rate - DRIVE) >= CALM_RATE || glow.isRunning || press.value != 0f
+    }
+    val running = ambient.running
     val context = LocalContext.current
 
     // Appear: the liquid lights up and the pump kicks it round once.
@@ -107,34 +103,6 @@ fun HaloLogo(
         }
         flow.push(TAP_IMPULSE)
         glow.animateTo(1f, motionNow.spring(HaloSpring.Gentle))
-    }
-    // The physics clock: only while it can be seen.
-    LaunchedEffect(running) {
-        if (!running) return@LaunchedEffect
-        val power = context.getSystemService(PowerManager::class.java)
-        var last = withFrameNanos { it }
-        var pending = 0f
-        var sincePowerCheck = 0f
-        var saving = power?.isPowerSaveMode == true
-        while (true) {
-            withFrameNanos { now ->
-                val dt = min((now - last) / NANOS_PER_S, MAX_STEP_S) / motionNow.scale
-                last = now
-                sincePowerCheck += dt
-                if (sincePowerCheck > 1f) {
-                    sincePowerCheck = 0f
-                    saving = power?.isPowerSaveMode == true
-                }
-                if (saving) return@withFrameNanos
-                pending += dt
-                // Calm: settle to ~30 fps (no state write = no redraw); anything moving faster runs every frame.
-                val calm = abs(flow.rate - DRIVE) < CALM_RATE && !glow.isRunning && press.value == 0f
-                if (!calm || pending >= CALM_STEP_S) {
-                    flow.step(pending)
-                    pending = 0f
-                }
-            }
-        }
     }
     // Gyroscope: the glass turns with the phone, the liquid's inertia makes it lag (only while running).
     DisposableEffect(running) {
@@ -160,7 +128,7 @@ fun HaloLogo(
             flowRate = { flow.rate },
             time = { flow.time },
             glow = { glow.value * (1f + PRESS_IGNITE * press.value) },
-            modifier = Modifier.onGloballyPositioned { visible = !it.boundsInWindow().isEmpty },
+            modifier = ambient.visibility,
         )
     }
     if (animated) {
@@ -324,12 +292,8 @@ internal const val DRIVE = 0.35f
 internal const val VISCOUS_S = 1.4f
 /** Angular momentum a tap adds (rad/s): about one extra lap before drag bleeds it off. */
 internal const val TAP_IMPULSE = 6f
-/** Below this difference from the drive the flow counts as calm and redraws at ~30 fps. */
+/** Below this difference from the drive the flow counts as calm (the clock then steps it at ~30 fps). */
 private const val CALM_RATE = 0.05f
-private const val CALM_STEP_S = 1f / 30f
-/** Longest physics step (s), so a dropped frame never makes the liquid jump. */
-private const val MAX_STEP_S = 0.05f
-private const val NANOS_PER_S = 1_000_000_000f
 /** Gyroscope sampling period (µs), ~30 Hz. */
 private const val GYRO_PERIOD_US = 33_333
 /** Fixed moment for [HaloLogoFrame]. */

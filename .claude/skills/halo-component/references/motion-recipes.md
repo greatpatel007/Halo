@@ -165,8 +165,9 @@ Design-system components expose a `modifier` so features can attach this.
   gyroscope (lags, then catches up). Keep the model pure Kotlin and unit-test it.
 - **Reuse the trajectory.** An analytic trajectory (e.g. a critically damped spring's `v(t)`) drives the feedback too:
   haptics pre-computed from it, sound following it, a reversal retargeting both.
-- **Continuous motion is gated** (SKILL non-negotiable 13): visible, foreground, no battery saver, no reduced motion;
-  ~30 fps when calm; zero frames when still or hidden. Measure it with `dumpsys gfxinfo` frame counts.
+- **Continuous motion goes through the runtime** (SKILL non-negotiable 13): `rememberAmbient` + `ambient.visibility`.
+  The clock handles visibility, foreground, battery saver, reduced motion, heat and the 30 fps calm rate. Measure it
+  with `dumpsys gfxinfo` frame counts; simulate heat with `adb shell cmd thermalservice override-status 3` (`reset`).
 
 ## Verifying motion
 Stills lie about motion. Record at real speed and review frames:

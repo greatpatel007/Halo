@@ -15,6 +15,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import com.halo.core.designsystem.foundation.HaloIndication
+import com.halo.core.designsystem.runtime.HaloRuntime
+import com.halo.core.designsystem.runtime.LocalHaloRuntime
+import com.halo.core.designsystem.runtime.rememberHaloRuntime
 
 // Tokens that change with the theme are dynamic locals: a theme switch then recomposes only the scopes that read
 // them. A static local would invalidate the whole tree below its provider, and the Tide's first frame waits on
@@ -62,6 +65,9 @@ object HaloTheme {
         @Composable @ReadOnlyComposable get() = LocalHaloMotion.current
     val haptics: HaloHaptics
         @Composable @ReadOnlyComposable get() = LocalHaloHaptics.current
+    /** Shared services (policy, frame clock): the only way components reach the system. */
+    val runtime: HaloRuntime
+        @Composable @ReadOnlyComposable get() = LocalHaloRuntime.current
     /** HDR emission: read `emission` / `headroom` in the draw phase only. */
     val hdr: HaloHdr
         @Composable @ReadOnlyComposable get() = LocalHaloHdr.current
@@ -89,6 +95,7 @@ fun HaloTheme(
     val typography = remember { haloTypography() }
     val haptics = rememberHaloHaptics(hapticObserver)
     val hdr = rememberHaloHdr()
+    val runtime = rememberHaloRuntime(reducedMotion = motion.reduced, timeScale = motion.scale)
     val selection = remember(colors) {
         TextSelectionColors(
             handleColor = colors.accent.fill,
@@ -104,6 +111,7 @@ fun HaloTheme(
         LocalHaloMotion provides motion,
         LocalHaloHaptics provides haptics,
         LocalHaloHdr provides hdr,
+        LocalHaloRuntime provides runtime,
         LocalHaloContentColor provides colors.content.primary,
         LocalIndication provides HaloIndication(RectangleShape),
         LocalTextSelectionColors provides selection,
