@@ -42,12 +42,6 @@ enum class HaloSpring(val dampingRatio: Float, val stiffness: Float) {
      * out, like water up a beach; it can be reversed mid-flight and keeps its momentum.
      */
     Tide(dampingRatio = 1f, stiffness = 7f),
-    /**
-     * Light travelling round the glass halo. Apple's "smooth" spring (bounce 0) with a ~1.8s perceptual duration,
-     * stiffness = (2π / duration)². Launched with a kick like [Tide], so the light leaves at full speed and only
-     * decelerates into its resting place.
-     */
-    Orbit(dampingRatio = 1f, stiffness = 12f),
 }
 
 /** Fade durations — color, alpha and progress only. */

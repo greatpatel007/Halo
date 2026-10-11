@@ -17,7 +17,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.halo.core.designsystem.component.HALO_LOGO_REST_ANGLE
 import com.halo.core.designsystem.component.HaloLogo
 import com.halo.core.designsystem.component.HaloLogoFrame
 import com.halo.core.designsystem.component.HaloLogoSize
@@ -41,7 +40,7 @@ internal fun LogoPage() {
     var size by rememberSaveable { mutableStateOf(HaloLogoSize.Large) }
     var animated by rememberSaveable { mutableStateOf(true) }
     var plays by rememberSaveable { mutableIntStateOf(0) }
-    SectionLabel("Playground · tap the mark", Modifier.enterRise(0))
+    SectionLabel("Playground · tap to push · twist the phone", Modifier.enterRise(0))
     ShowroomCard(Modifier.enterRise(1)) {
         Box(
             Modifier
@@ -62,13 +61,13 @@ internal fun LogoPage() {
     }
 
     // ---- 2. State matrix: moments of the motion, frozen.
-    SectionLabel("States · unlit / flowing / rest / pressed", Modifier.enterRise(2))
+    SectionLabel("States · unlit / steady / pushed / pressed", Modifier.enterRise(2))
     ShowroomCard(Modifier.enterRise(3)) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Frame("unlit") { HaloLogoFrame(fluidAngle = HALO_LOGO_REST_ANGLE, flowSpeed = 0f, glow = 0f, surfaceColor = surface) }
-            Frame("flowing") { HaloLogoFrame(fluidAngle = 100f, flowSpeed = 520f, glow = 1f, surfaceColor = surface) }
-            Frame("rest") { HaloLogoFrame(fluidAngle = HALO_LOGO_REST_ANGLE, flowSpeed = 0f, glow = 1f, surfaceColor = surface) }
-            Frame("pressed") { HaloLogoFrame(fluidAngle = HALO_LOGO_REST_ANGLE, flowSpeed = 0f, glow = 1.6f, surfaceColor = surface) }
+            Frame("unlit") { HaloLogoFrame(flowRate = 0f, glow = 0f, surfaceColor = surface) }
+            Frame("steady") { HaloLogoFrame(flowRate = 20f, glow = 1f, surfaceColor = surface) }
+            Frame("pushed") { HaloLogoFrame(flowRate = 340f, glow = 1f, surfaceColor = surface) }
+            Frame("pressed") { HaloLogoFrame(flowRate = 20f, glow = 1.6f, surfaceColor = surface) }
         }
         Spacer(Modifier.height(s.lg))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(s.lg)) {
@@ -83,12 +82,12 @@ internal fun LogoPage() {
     ShowroomCard(Modifier.enterRise(5)) {
         SpecLine("box", "logoLg 56 · logoMd 32 · touch ≥ 48")
         SpecLine("tube", "ring 0.36W · tube 0.058W · bore 78%")
-        SpecLine("liquid", "25% of the ring · radium glow · menisci")
-        SpecLine("flow", "Orbit · ζ 1.0 · k 12 · kick ½ωD")
+        SpecLine("liquid", "laminar · Dean shift · scintillation")
+        SpecLine("physics", "τ 1.4s · tap +6 rad/s · gyro")
         SpecLine("light", "key top-left · Fresnel · caustic shadow")
         SpecLine("ignite", "Gentle · press +60% glow")
         SpecLine("haptic", "Tick on tap")
-        SpecLine("at rest", "no frames · reduced motion = static")
+        SpecLine("frames", "~30 fps calm · 0 when hidden")
     }
 }
 

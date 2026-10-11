@@ -38,14 +38,14 @@ object ShowroomCatalog {
         ShowroomPage("spacing", "Space & shape", "4dp grid, radii, strokes", ShowroomSection.Foundations) { SpacingPage() },
         ShowroomPage("depth", "Depth & light", "Surfaces, glass, glow, grain", ShowroomSection.Foundations) { DepthPage() },
         ShowroomPage("motion", "Motion", "Spring tokens, curves, choreography", ShowroomSection.Foundations) { MotionPage() },
-        ShowroomPage("haptics", "Haptics", "The tactile vocabulary", ShowroomSection.Foundations) { HapticsPage() },
+        ShowroomPage("haptics", "Haptics", "Haptics & sound lab · tiers per phone", ShowroomSection.Foundations) { HapticsPage() },
         ShowroomPage("icons", "Icons", "24dp grid, 1.75 stroke", ShowroomSection.Foundations) { IconsPage() },
         // halo-component: component pages are registered below this line.
         ShowroomPage("button", "Button", "4 variants · press morph · loading collapse", ShowroomSection.Components) { ButtonPage() },
         ShowroomPage("rolling-amount", "Rolling amount", "Odometer digits · sats / BTC / fiat · privacy", ShowroomSection.Components) { RollingAmountPage() },
         ShowroomPage("hold-to-send", "Hold to send", "Charge · lock · check · spark burst", ShowroomSection.Components) { HoldToSendPage() },
         ShowroomPage("toggle", "Toggle", "Ceramic / graphite switch · the theme switch", ShowroomSection.Components) { TogglePage() },
-        ShowroomPage("logo", "Logo", "Glass halo · carried light · orbit on tap", ShowroomSection.Components) { LogoPage() },
+        ShowroomPage("logo", "Logo", "Glass halo · radium liquid · real fluid physics", ShowroomSection.Components) { LogoPage() },
     )
 
     fun find(id: String): ShowroomPage? = pages.firstOrNull { it.id == id }

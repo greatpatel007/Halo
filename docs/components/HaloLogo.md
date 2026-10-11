@@ -1,49 +1,40 @@
 # HaloLogo
 
-> The Halo mark as a glass tube bent into a ring. A bead of lime light launches from where the splash's satellite
-> sits, runs once round the ring with the glass carrying its glow, and settles back where it started. It should
-> feel like a real object on the card: lit by the same light, casting the same kind of shadow.
+> The Halo mark as a glass tube bent into a ring, filled with a self-luminous, radium-like liquid that circulates
+> continuously and behaves like a real fluid. It should feel like an object on the card: lit by the same light,
+> casting the same kind of shadow, and answering touch and motion the way liquid in glass would.
 
 | Archetype | Status | Showroom | File |
 |---|---|---|---|
-| Feedback (brand mark) | Draft | `halo://showroom/logo` | `core/designsystem/.../component/HaloLogo.kt` |
+| Feedback (brand mark) | Review | `halo://showroom/logo` | `core/designsystem/.../component/HaloLogo.kt` |
 
-> **Work in progress.** The code currently renders a quarter-filled tube of radium-like liquid (iteration 2). It is
-> being reworked into a fully filled tube whose liquid circulates continuously, with real fluid physics: laminar
-> (Poiseuille) flow with a Dean shift in the bend, scintillating phosphor grains on their streamlines, viscous
-> relaxation, tap impulses and gyroscope inertia. The sections below still describe iteration 1 (a single bead of
-> light) and will be rewritten with iteration 3.
-
-**Design read:** `HaloLogo · Feedback (brand mark) · signs the app · a bead of lime light launches from the splash satellite's spot, runs once round a glass ring with the glass carrying its glow, and settles back where it started`
+**Design read:** `HaloLogo · Feedback (brand mark) · signs the app · radium-like liquid circulating in a glass ring, its grains scintillating on their streamlines; a tap pushes it, turning the phone makes it lag behind the glass`
 
 **Assumptions:**
-- The mark keeps the splash geometry (`splash_halo.xml`): a ring with its satellite at the top right (−45°). The
-  satellite becomes the bead of light inside the glass, so the splash and the in-app mark tell one story.
-- The light is the accent (lime) in both themes, like the splash mark on dark. On light the glass is clear and the
-  lime light carries the mark.
-- **No idle loop** (Apple motion guidance: motion has a purpose and never competes with content). The mark plays
-  once when it appears and again when tapped, then rests. At rest nothing renders.
-- Refraction is of the surface the mark rests on: the shader renders that floor (its token colour, the tube's own
-  shadow, caustic and spilled light) at the refracted position, so what you see through the glass is consistent.
-  The mark never samples live pixels behind it (it sits inside the screen's backdrop source).
+- Geometry follows the splash ring (`splash_halo.xml`), scaled up so the glass has room for detail.
+- The liquid is the accent (lime) in both themes, like the splash mark on dark.
+- Continuous motion is wanted (user direction). It is made responsible: it runs only while the mark is on screen,
+  the app is in the foreground and battery saver is off, at ~30 fps when calm; reduced motion shows it still.
+- Refraction is of the surface the mark rests on (rendered from `surfaceColor`, the tube's shadow and caustic), never
+  live pixels: the mark sits inside the screen's backdrop source.
+- "Real physics" means physically based models, kept cheap: first-order viscous dynamics, a laminar velocity
+  profile, Poisson scintillation, Beer–Lambert, Fresnel, light-caused shadow. Not a fluid simulation.
 
 ## 1. Usage
-- **Use for:** brand moments: the home hero next to the HALO wordmark, an about screen, an empty state header.
-- **Don't use for:** loading (use a skeleton), status (use the status colours), or as a button icon (use `HaloIcons`).
-- **Where it rests:** on `bg.raised` hero surfaces by default (`surfaceColor` tells it what is underneath).
+- **Use for:** brand moments: the home hero next to the HALO wordmark, an about screen, an empty-state header.
+- **Don't use for:** loading (use a skeleton), status (status colours), or as an icon (`HaloIcons`).
+- At most one animated mark per screen; extra marks pass `animated = false`.
 
 ## 2. Anatomy
-All proportions are of the mark's box W (`logoMd 32`, `logoLg 56`).
+All proportions are of the box W (`logoMd 32`, `logoLg 56`).
 ```
- ┌──────────── box W × W ────────────┐
- │        ╭───── glass tube ─────╮    centreline radius 0.34W, tube radius 0.075W (Ø 8.4dp at 56)
- │      ╭─╯   ● bead (−45° rest)  ╰─╮  bead: hot core, radius ≈ 0.55 × tube, lime burning to white
- │      │      floor seen through  │  refraction: the floor under the tube, flipped and magnified (×0.6)
- │      ╰─╮   the glass           ╭─╯  Fresnel rim + specular from the key light (top-left)
- │        ╰──────────────────────╯    contact shadow, offset by the light from height = tube radius,
- └───────────────────────────────────┘  glass lets ~half the light through; a caustic line sits inside it
- Drawn into the box inflated by 2 × tube radius, so shadow and glow are never clipped.
- Touch target ≥ 48dp (logoMd is padded).
+ ring centre-line radius 0.36W · tube radius 0.058W (Ø 6.5dp at 56) · bore 78% of the tube
+ glass wall: floor through a cylindrical lens (×0.6, flipped), Beer–Lambert absorption, piped light along the walls
+ liquid (fills the bore): soft radium glow, denser at the core; luminous clouds carried at the mean flow;
+   phosphor grains on 7 streamlines × 2 depth layers, 16 per streamline, each scintillating
+ Fresnel rim (pixel-averaged at the edges) + studio window + tight key-light highlight (top-left)
+ contact shadow from the key light at height = tube radius, ~half transmitted, caustic line inside it; light spill
+ Drawn into the box inflated by 2.5 tube radii so shadow and glow are never clipped. Touch target ≥ 48dp.
 ```
 
 ## 3. API
@@ -60,12 +51,11 @@ fun HaloLogo(
     interactionSource: MutableInteractionSource? = null,
 )
 
-/** The mark frozen at one moment of its motion: state matrices, previews, static screenshots. */
+/** The mark frozen at one moment: state matrices, previews, static screenshots. Decorative. */
 @Composable
 fun HaloLogoFrame(
-    beadAngle: Float,
-    beadSpeed: Float,
-    glow: Float,
+    flowRate: Float,          // degrees per second
+    glow: Float,              // 0 unlit · 1 glowing · up to 1.6 pressed
     modifier: Modifier = Modifier,
     size: HaloLogoSize = HaloLogoSize.Large,
     surfaceColor: Color = HaloTheme.colors.bg.raised,
@@ -73,84 +63,76 @@ fun HaloLogoFrame(
 ```
 
 ## 4. Variants × sizes
-| Theme | Glass (`materials.glass`) | Light | Shadow |
+| Theme | Glass (`materials.glass`) | Liquid | Shadow |
 |---|---|---|---|
-| Dark | smoky graphite tint (Ink700), absorption 0.55, environment Ink600 | `accent.fill` (volt) | black, `light.shadowOpacity` |
-| Light | cool clear tint (Slate400), absorption 0.22, environment Slate500 | `accent.fill` | cool blue-grey (`light.shadow`) |
+| Dark | smoky (Ink950 tint, absorption 0.8, env Ink500) | `accent.fill`, core burns towards white | black, `light.shadowOpacity` |
+| Light | clear (Slate400 tint, absorption 0.12, env Slate400) | `accent.fill`, stays saturated | cool blue-grey |
 
 | Size | Box | Tube Ø | Touch target |
 |---|---|---|---|
-| Medium | 32 | 4.8dp | 48 (padded) |
-| Large | 56 | 8.4dp | 56 |
+| Medium | 32 | 3.7dp | 48 (padded) |
+| Large | 56 | 6.5dp | 56 |
 
 ## 5. State matrix
-| State | Visual delta | Motion | Haptic | Semantics |
+| State | Visual | Motion | Haptic | Semantics |
 |---|---|---|---|---|
-| Unlit (first frame) | clear glass, no light | — | — | — |
-| Igniting | the bead lights at −45° | glow 0 → 1, Gentle | — | — |
-| Orbiting | the bead runs clockwise with a comet tail that grows with speed; the glass glows where it passed | angle +2π, Orbit with kick | — | — |
-| Rest | bead at −45°, soft symmetric glow either side, faint light piped all round | — | — | Image "Halo" |
-| Pressed | the light ignites +60% (the mark's touch response is its light, D5) and the mark sinks to 0.97 | Snap / Quick (press progress) | — | — |
-| Tapped | one more revolution from wherever the bead is, momentum kept | Orbit, velocity = max(current, kick) | Tick | action "Replay the halo" |
-| Static (`animated = false`) | rest state, not pressable | — | — | Image "Halo" |
-| Reduced motion | rest state; a tap gives the press ignite only | springs snap | Tick | same |
+| Unlit (appear) | liquid dimmed, glass clear | glow 0 → 1, Gentle | — | — |
+| Steady | soft glow, sparse twinkles drifting clockwise, core overtaking the walls | drive 0.35 rad/s | — | Button "Halo" |
+| Pushed | fast circulation; the profile's peak moves towards the outer wall (Dean) | +6 rad/s, viscous decay τ 1.4 s | Ping | action "Push the liquid" |
+| Phone turning | liquid lags behind the glass, then catches up | gyroscope, viscous coupling | — | — |
+| Pressed | liquid glows +60% (D5), mark sinks to 0.97 | press progress | — | — |
+| Off screen / background / battery saver | frozen, no frames | — | — | — |
+| Static (`animated = false`) or reduced motion | still, glowing | none | Ping (tap only when animated) | Image "Halo" |
 
 ## 6. Tokens used
 - **Sizes:** `logoMd`, `logoLg` (new), `minTouch`.
-- **Colors:** `accent.fill` (light), `bg.raised` (default surface).
-- **Light:** `HaloTheme.light` (direction, highlight, shadow tone, shadow opacity, shadow offset per height).
-- **Materials:** `materials.glass` (new `GlassMaterial`).
-- **Motion:** `Orbit` (new), `Gentle`; press progress (Snap / Quick).
-- **Haptics:** `Tick`.
-- **New tokens:**
-  - `HaloSizes.logoMd` / `logoLg`: the mark needs its own box; icon sizes are too small for glass detail.
-  - `HaloSpring.Orbit (1.0, 12)`: Apple's smooth spring at ~1.8s. `Gentle` is too fast for a full revolution,
-    `Tide` too slow for an object this small.
-  - `GlassMaterial` + `HaloMaterials.glass`: components pick materials by role; glass needs absorption,
-    Fresnel and an environment, which `ReliefMaterial` doesn't have.
+- **Colors:** `accent.fill`, `bg.raised` (default surface).
+- **Light:** `HaloTheme.light`. **Materials:** `materials.glass` (new `GlassMaterial`).
+- **Motion:** `Gentle` (ignite); press progress. Physics constants live in the component (drive, viscosity,
+  impulse): they are physical parameters, not design tokens.
+- **Haptics:** `Ping` (new: glass tink).
 
-## 7. Motion choreography
-| Trigger | Property | From → To | Spec | Notes |
-|---|---|---|---|---|
-| appear | glow | 0 → 1 | Gentle | the bead ignites where the splash satellite was |
-| appear | bead angle | −45° → −45° + 360° | Orbit, launched with v₀ = ½·ω·2π | leaves at full speed, only decelerates |
-| any bead motion | comet tail | length ∝ angular speed | draw phase | the glass keeps glowing where the bead has just been |
-| press | light | × (1 + 0.6·press) | press progress (Snap in, Quick out) | D5: emission ramps up (+60%, `card.mp4`) |
-| press | scale | 1 → 0.97 | via HaloPressable | |
-| tap | bead angle | current → target + 360° | Orbit, v = max(v, kick) | interruptible: a tap mid-orbit adds a revolution |
-| settle | bead angle | wrapped to −45° | snap (invisible) | keeps the angle bounded |
+## 7. Motion choreography (physics)
+| Trigger | Model | Values |
+|---|---|---|
+| appear | glow 0 → 1 (Gentle) + one impulse | liquid kicked round once, then settles to the drive |
+| always | lab-frame fluid angular velocity W relaxes to (glass spin + drive): `W += (Ω + D − W)(1 − e^(−dt/τ))` | D 0.35 rad/s (lap ≈ 18 s), τ 1.4 s |
+| tap | W += impulse | 6 rad/s → ≈ impulse × τ = 8.4 rad extra |
+| phone rotation | Ω from the gyroscope (−z, ~30 Hz); shown motion = W − Ω | liquid lags, then is dragged along |
+| across the bore | Poiseuille profile, no-slip at both walls, peak shifted outwards by δ = 0.12 + min(0.03·|rate|, 0.2) | streamline speed = 1.5 × profile × mean |
+| grains | Poisson scintillation, ~1.5 flashes/s, decay ~80 ms; 6% between flashes | |
+| frame rate | every frame while not calm; ~30 fps when calm (no state write, no redraw) | calm = |rate − drive| < 0.05, glow settled, not pressed |
 
-All animated values are read in the draw phase: zero recomposition per frame. Nothing animates at rest.
+Animated values are read only in the draw phase: zero recomposition per frame. Slow-mo scales the physics clock.
 
 ## 8. Haptics
 | Moment | Token | Timing |
 |---|---|---|
-| tap | Tick | on click (a light acknowledgement, not a button `Tap`) |
+| tap | Ping | on click: a sharp light tap and a short glass tink (fixed resonance, damped by the liquid) |
 
 ## 9. Gestures
-Tap only (`HaloPressable`). No drag: the mark lives in scrolling content and must never steal a scroll.
+Tap only (`HaloPressable`, no highlight overlay: the response is the mark's own light). No drag: the mark lives in
+scrolling content and must never steal a scroll. The phone's rotation is the second input.
 
 ## 10. Accessibility
-- `contentDescription` (default "Halo"). Animated marks are a `Role.Button` with the click label "Replay the
-  halo"; static marks are `Role.Image`.
-- Touch target ≥ 48dp.
-- No text, so font scale doesn't apply. RTL: the orbit stays clockwise and the light stays top-left; the light is
-  world-fixed and the mark is a logo, not a direction.
+- `contentDescription` (default "Halo"). Animated: `Role.Button`, click label "Push the liquid". Static: `Role.Image`.
+- Touch target ≥ 48dp. No text. RTL: the flow stays clockwise and the light stays top-left (world-fixed).
 
 ## 11. Reduced motion
-- No ignite, no orbit: the mark appears at rest, lit.
-- A tap still acknowledges with the press ignite and the haptic; the bead doesn't travel.
+No physics clock, no sensor, no impulse: a still, glowing tube. A tap still gives the press glow and the haptic.
 
 ## 12. Edge cases
-- Rapid taps: each adds a revolution to the current target, with the velocity kept (never a jump).
-- Recomposed or scrolled away mid-orbit: the animation keeps its state; leaving composition cancels it.
-- Theme switch mid-orbit: materials and light change underneath; the motion continues.
-- `surfaceColor` that doesn't match what's underneath: the inside of the tube shows the given colour. Pass the
-  real surface colour.
+- Rapid taps: impulses add up; viscosity bleeds them off. No cap needed (decay is exponential).
+- Dropped frames: physics steps are capped at 50 ms, so the liquid never jumps.
+- Scrolled away mid-push: the clock stops, and the state resumes where it was.
+- No gyroscope: the glass is treated as still.
+- `surfaceColor` that doesn't match what's underneath: the tube shows the given colour. Pass the real surface.
 
 ## 13. Verification
-- Lint: `lint_ds.py HaloLogo`.
-- Screenshots: `shots/logo-dark.png`, `shots/logo-light.png` (state matrix), `shots/home-logo.png` (hero), plus a
-  real-speed recording of the orbit reviewed frame by frame.
-- Zoomed pixel review of the tube edges, highlight, caustic and shadow in both themes (`halo.py zoom`).
-- Unverified: how the Tick haptic feels (on device); 120 Hz smoothness (emulator).
+- Lint: OK. Unit tests: `FluidFlowTest` (spin-up to the drive in τ, impulse decay and distance = impulse × τ,
+  rotating-container lag and catch-up).
+- Screenshots: `shots/logo-dark.png`, `shots/logo-light.png`, zoomed pixel review of tube, grains and shadow.
+- Frame budget (emulator, 5 s): hero visible 180 frames; scrolled off screen 1 (the demo balance); app in
+  background 0; reduced motion 0.
+- Unverified on the emulator: how the motion and the gyroscope lag feel at real speed (needs a device), the Ping
+  haptic, 120 Hz smoothness.

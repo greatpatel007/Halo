@@ -107,7 +107,6 @@ Components pick a material role, never their own albedo, gloss or grain.
 | `Digit` | 0.75 / 700 | odometer digit roll |
 | `Mechanical` | 1.0 / 400 | switch thumbs, sliders with mass (~330ms, never bounces) |
 | `Tide` | 1.0 / 7 | the theme transition's water front (launched with a kick) |
-| `Orbit` | 1.0 / 12 | light travelling round the glass halo (Apple "smooth", ~1.8s; launched with a kick) |
 
 - **Calls:**
   - `motion.spring<T>(token, visibilityThreshold?)` for anything spatial.

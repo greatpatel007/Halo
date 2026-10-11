@@ -17,4 +17,6 @@ dependencies {
     api(libs.compose.animation)
     api(libs.androidx.graphics.shapes)
     implementation(libs.androidx.core.ktx)
+    // Lifecycle-aware animation: continuous effects pause when the app is in the background.
+    implementation(libs.androidx.lifecycle.runtime.compose)
 }

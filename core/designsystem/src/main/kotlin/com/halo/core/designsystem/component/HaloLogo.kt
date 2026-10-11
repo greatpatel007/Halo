@@ -1,9 +1,13 @@
 package com.halo.core.designsystem.component
 
+import android.content.Context
 import android.graphics.RuntimeShader
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.os.PowerManager
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationEndReason
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,12 +17,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -27,39 +36,44 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.halo.core.designsystem.foundation.HaloPreview
 import com.halo.core.designsystem.foundation.HaloPressable
 import com.halo.core.designsystem.foundation.material.SDF_COMMON
 import com.halo.core.designsystem.foundation.rememberPressProgress
 import com.halo.core.designsystem.theme.HaloHaptic
-import com.halo.core.designsystem.theme.HaloMotion
 import com.halo.core.designsystem.theme.HaloSpring
 import com.halo.core.designsystem.theme.HaloTheme
-import kotlinx.coroutines.launch
-import kotlin.math.max
-import kotlin.math.sqrt
+import kotlin.math.abs
+import kotlin.math.exp
+import kotlin.math.min
 
 enum class HaloLogoSize { Medium, Large }
 
-/** Where the liquid rests: centred on the splash satellite's spot, top right (degrees, clockwise from 3 o'clock). */
-const val HALO_LOGO_REST_ANGLE = -45f
-
 /**
- * The Halo mark: a glass tube bent into a ring, a quarter filled with a self-luminous, radium-like liquid. When
- * it appears, the liquid lights up and flows once round the ring, leaving a wet film that fades, and settles back
- * in the top-right quadrant where the splash's satellite sits; a tap sends it round again, momentum kept. The empty
- * glass stays clear and only picks up light piped from the liquid. Lit by the scene light, with a light-caused
- * contact shadow and a caustic inside it. Nothing animates at rest.
+ * The Halo mark: a glass tube bent into a ring, filled with a self-luminous, radium-like liquid that circulates
+ * continuously, with real fluid behaviour:
+ * - laminar pipe flow: fastest in the core, still at the walls (no-slip), the fast core pushed towards the outer
+ *   wall of the bend (Dean flow), shown by phosphor grains riding their streamlines and scintillating at random;
+ * - momentum and viscosity: a gentle steady drive; a tap adds momentum that viscous drag bleeds back to the drive;
+ * - inertia: turn the phone and the liquid lags behind the glass, then catches up (rotating-container physics).
+ *
+ * Lit by the scene light, with a light-caused contact shadow and a caustic. It runs only while it is on screen,
+ * the app is in the foreground and battery saver is off, at ~30 fps when calm. Reduced motion: a still, glowing tube.
  *
  * Spec: docs/components/HaloLogo.md · Archetype: Feedback (brand mark) · Showroom: halo://showroom/logo
  *
- * @param animated plays the flow on appear and on tap. False draws the resting mark, not pressable.
+ * @param animated runs the liquid and makes the mark pressable. False draws a still, glowing mark.
  * @param surfaceColor the surface the mark rests on; it is what you see through the glass.
  */
 @Composable
@@ -72,44 +86,90 @@ fun HaloLogo(
     interactionSource: MutableInteractionSource? = null,
 ) {
     val motion = HaloTheme.motion
-    val source = interactionSource ?: remember { MutableInteractionSource() }
-    val angle = remember { Animatable(REST) }
-    // Distance flowed before the angle was last wrapped: keeps the internal currents continuous across wraps.
-    val flowed = remember { mutableFloatStateOf(0f) }
-    val glow = remember { Animatable(if (animated && !motion.reduced) 0f else 1f) }
-    val press = rememberPressProgress(source)
-    val scope = rememberCoroutineScope()
     val motionNow by rememberUpdatedState(motion)
-    val onWrap: (Float) -> Unit = { flowed.floatValue += it }
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    val flow = remember { FluidFlow() }
+    val live = animated && !motion.reduced
+    val glow = remember { Animatable(if (live) 0f else 1f) }
+    val press = rememberPressProgress(source)
 
-    LaunchedEffect(animated) {
-        if (!animated) {
+    var visible by remember { mutableStateOf(false) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val lifecycleState by lifecycle.currentStateFlow.collectAsState()
+    val running = live && visible && lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    val context = LocalContext.current
+
+    // Appear: the liquid lights up and the pump kicks it round once.
+    LaunchedEffect(live) {
+        if (!live) {
             glow.snapTo(1f)
-            angle.snapTo(REST)
             return@LaunchedEffect
         }
-        launch { glow.animateTo(1f, motionNow.spring(HaloSpring.Gentle)) }
-        angle.flow(motionNow, onWrap)
+        flow.push(TAP_IMPULSE)
+        glow.animateTo(1f, motionNow.spring(HaloSpring.Gentle))
+    }
+    // The physics clock: only while it can be seen.
+    LaunchedEffect(running) {
+        if (!running) return@LaunchedEffect
+        val power = context.getSystemService(PowerManager::class.java)
+        var last = withFrameNanos { it }
+        var pending = 0f
+        var sincePowerCheck = 0f
+        var saving = power?.isPowerSaveMode == true
+        while (true) {
+            withFrameNanos { now ->
+                val dt = min((now - last) / NANOS_PER_S, MAX_STEP_S) / motionNow.scale
+                last = now
+                sincePowerCheck += dt
+                if (sincePowerCheck > 1f) {
+                    sincePowerCheck = 0f
+                    saving = power?.isPowerSaveMode == true
+                }
+                if (saving) return@withFrameNanos
+                pending += dt
+                // Calm: settle to ~30 fps (no state write = no redraw); anything moving faster runs every frame.
+                val calm = abs(flow.rate - DRIVE) < CALM_RATE && !glow.isRunning && press.value == 0f
+                if (!calm || pending >= CALM_STEP_S) {
+                    flow.step(pending)
+                    pending = 0f
+                }
+            }
+        }
+    }
+    // Gyroscope: the glass turns with the phone, the liquid's inertia makes it lag (only while running).
+    DisposableEffect(running) {
+        val sensors = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+        val gyro = sensors?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        val listener = object : SensorEventListener {
+            // z is counter-clockwise about the screen normal; the ring's angles run clockwise.
+            override fun onSensorChanged(event: SensorEvent) { flow.glassSpin = -event.values[2] }
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+        }
+        if (running && gyro != null) sensors.registerListener(listener, gyro, GYRO_PERIOD_US)
+        onDispose {
+            sensors?.unregisterListener(listener)
+            flow.glassSpin = 0f
+        }
     }
 
     val glass: @Composable () -> Unit = {
         LogoGlass(
             size = size,
             surfaceColor = surfaceColor,
-            fluidAngle = { angle.value },
-            // Perceived speed: slow-mo stretches time, not the film or the menisci.
-            flowSpeed = { angle.velocity * motionNow.scale },
-            flowPhase = { angle.value - REST + flowed.floatValue },
+            flowPhase = { flow.phase },
+            flowRate = { flow.rate },
+            time = { flow.time },
             glow = { glow.value * (1f + PRESS_IGNITE * press.value) },
+            modifier = Modifier.onGloballyPositioned { visible = !it.boundsInWindow().isEmpty },
         )
     }
     if (animated) {
         // The touch response is the mark's own light (D5), so no highlight overlay.
         HaloPressable(
-            onClick = { scope.launch { angle.flow(motionNow, onWrap) } },
+            onClick = { if (live) flow.push(TAP_IMPULSE) },
             shape = CircleShape,
-            onClickLabel = "Replay the halo",
-            haptic = HaloHaptic.Tick,
+            onClickLabel = "Push the liquid",
+            haptic = HaloHaptic.Ping,
             interactionSource = source,
             indication = null,
             modifier = modifier
@@ -130,17 +190,14 @@ fun HaloLogo(
 }
 
 /**
- * The mark frozen at one moment of its motion: for state matrices, previews and static screenshots. Decorative
- * (no semantics).
+ * The mark frozen at one moment: for state matrices, previews and static screenshots. Decorative (no semantics).
  *
- * @param fluidAngle centre of the liquid, degrees clockwise from 3 o'clock; rest is [HALO_LOGO_REST_ANGLE].
- * @param flowSpeed degrees per second (sign = direction); sets the film and the menisci.
+ * @param flowRate circulation in degrees per second (sign = direction); shapes the Dean shift of the flow.
  * @param glow 0 = unlit liquid, 1 = glowing, up to 1.6 pressed.
  */
 @Composable
 fun HaloLogoFrame(
-    fluidAngle: Float,
-    flowSpeed: Float,
+    flowRate: Float,
     glow: Float,
     modifier: Modifier = Modifier,
     size: HaloLogoSize = HaloLogoSize.Large,
@@ -149,24 +206,43 @@ fun HaloLogoFrame(
     LogoGlass(
         size = size,
         surfaceColor = surfaceColor,
-        fluidAngle = { fluidAngle * DEG },
-        flowSpeed = { flowSpeed * DEG },
-        flowPhase = { fluidAngle * DEG },
+        flowPhase = { FRAME_PHASE },
+        flowRate = { flowRate * DEG },
+        time = { FRAME_TIME },
         glow = { glow },
         modifier = modifier,
     )
 }
 
-/** One more revolution from wherever the liquid is heading, launched so it leaves at full speed. */
-private suspend fun Animatable<Float, AnimationVector1D>.flow(motion: HaloMotion, onWrap: (Float) -> Unit) {
-    val target = targetValue + TAU
-    val omega = sqrt(HaloSpring.Orbit.stiffness) / motion.scale
-    val kick = ORBIT_KICK * omega * (target - value)
-    val result = animateTo(target, motion.spring(HaloSpring.Orbit), initialVelocity = max(velocity, kick))
-    // Same place on the ring, so the wrap is invisible; it keeps the angle bounded.
-    if (result.endReason == AnimationEndReason.Finished) {
-        onWrap(value - REST)
-        snapTo(REST)
+/**
+ * The liquid's motion, in the lab frame. The fluid has its own angular velocity [absolute]; viscous drag couples it
+ * to the glass (spinning at [glassSpin] with the phone) plus a gentle pump [DRIVE], relaxing with time constant
+ * [VISCOUS_S]. What you see is the motion relative to the glass. Draw-phase state only: never recomposes.
+ */
+@Stable
+internal class FluidFlow {
+    /** Mean flow travelled relative to the glass (rad). */
+    var phase by mutableFloatStateOf(0f)
+        private set
+    /** Angular speed relative to the glass (rad/s, clockwise +). */
+    var rate by mutableFloatStateOf(0f)
+        private set
+    /** Scintillation clock (s). */
+    var time by mutableFloatStateOf(0f)
+        private set
+    var glassSpin = 0f
+    private var absolute = 0f
+
+    fun push(impulse: Float) {
+        absolute += impulse
+    }
+
+    fun step(dt: Float) {
+        val target = glassSpin + DRIVE
+        absolute += (target - absolute) * (1f - exp(-dt / VISCOUS_S))
+        rate = absolute - glassSpin
+        phase += rate * dt
+        time += dt
     }
 }
 
@@ -174,9 +250,9 @@ private suspend fun Animatable<Float, AnimationVector1D>.flow(motion: HaloMotion
 private fun LogoGlass(
     size: HaloLogoSize,
     surfaceColor: Color,
-    fluidAngle: () -> Float,
-    flowSpeed: () -> Float,
     flowPhase: () -> Float,
+    flowRate: () -> Float,
+    time: () -> Float,
     glow: () -> Float,
     modifier: Modifier = Modifier,
 ) {
@@ -197,10 +273,9 @@ private fun LogoGlass(
                     setFloatUniform("tubeRadius", tube)
                     setFloatUniform("light", light.x, light.y, light.z)
                     setFloatUniform("shadowShift", light.shadowDx, light.shadowDy)
-                    setFloatUniform("fluidCenter", fluidAngle())
-                    setFloatUniform("fluidLength", FLUID_SHARE * TAU)
-                    setFloatUniform("flowSpeed", flowSpeed())
                     setFloatUniform("flowPhase", flowPhase())
+                    setFloatUniform("flowRate", flowRate())
+                    setFloatUniform("time", time())
                     setFloatUniform("glow", glow())
                     setColorUniform("surfaceColor", surfaceColor.toArgb())
                     setColorUniform("glassTint", glass.tint.toArgb())
@@ -231,38 +306,49 @@ private fun logoBox(size: HaloLogoSize): Dp = when (size) {
     HaloLogoSize.Large -> HaloTheme.sizes.logoLg
 }
 
-// ------------------------------------------------------------------------------------------- geometry & motion
+// ------------------------------------------------------------------------------------------- geometry & physics
 
 /** Centre-line radius of the ring, in box widths. */
 private const val RING_RADIUS = 0.36f
 /** Outer radius of the glass tube, in box widths. */
 private const val TUBE_RADIUS = 0.058f
-/** Share of the ring the liquid fills. */
-private const val FLUID_SHARE = 0.25f
 /** How far past the box the shadow and spilled light reach, in tube radii. */
 private const val DRAW_MARGIN = 2.5f
 /** Pressing makes the liquid glow up to this much brighter (card reference: +60%). */
 private const val PRESS_IGNITE = 0.6f
-/** Launch velocity as a fraction of ω·distance: 0.5 leaves at top speed and only decelerates (see the Tide). */
-private const val ORBIT_KICK = 0.5f
-private const val TAU = 6.2831855f
+/** Steady circulation from the pump (rad/s): one lap in ~18 s, calm. */
+internal const val DRIVE = 0.35f
+/** Viscous relaxation time (s): how long the liquid takes to follow the glass and the pump. */
+internal const val VISCOUS_S = 1.4f
+/** Angular momentum a tap adds (rad/s): about one extra lap before drag bleeds it off. */
+internal const val TAP_IMPULSE = 6f
+/** Below this difference from the drive the flow counts as calm and redraws at ~30 fps. */
+private const val CALM_RATE = 0.05f
+private const val CALM_STEP_S = 1f / 30f
+/** Longest physics step (s), so a dropped frame never makes the liquid jump. */
+private const val MAX_STEP_S = 0.05f
+private const val NANOS_PER_S = 1_000_000_000f
+/** Gyroscope sampling period (µs), ~30 Hz. */
+private const val GYRO_PERIOD_US = 33_333
+/** Fixed moment for [HaloLogoFrame]. */
+private const val FRAME_PHASE = 0.6f
+private const val FRAME_TIME = 0.37f
 /** Radians per degree. */
 private const val DEG = 0.017453292f
-private const val REST = HALO_LOGO_REST_ANGLE * DEG
 
 /*
  * The glass halo, one pass. Two parts:
  *
  *   floor  — what the ring does to the surface it rests on: a contact shadow cast by the key light from the height of
  *            the tube's centre line (glass lets about half the light through, focused into a caustic line), contact
- *            occlusion where it touches, and the liquid's light spilling out round it.
- *   tube   — a glass rod with a bore. The empty glass shows the floor under it through a cylindrical lens (flipped,
- *            magnified), absorbed towards the glass tint by thickness (Beer–Lambert), and the light it pipes from the
- *            liquid (strongest along the walls, where it is totally internally reflected). The liquid fills a quarter
- *            of the bore: self-luminous like radium, denser where thicker, with currents circulating inside it,
- *            scintillation grains that travel with it, concave menisci that flatten at the front and deepen at the
- *            back while it flows, and the wet film it leaves behind. On top, Fresnel-weighted reflections of the
- *            room and the key light as a tight highlight.
+ *            occlusion where it touches, and the liquid's light spilling out all round.
+ *   tube   — a glass rod with a bore. The glass wall shows the floor through a cylindrical lens (flipped, magnified),
+ *            absorbed towards the glass tint by thickness (Beer–Lambert), and glows where it pipes the liquid's
+ *            light (strongest along the walls: total internal reflection). The bore is full of a self-luminous,
+ *            radium-like liquid in laminar flow: a soft glow (denser where thicker) carried at the mean flow, and
+ *            phosphor grains riding their streamlines — Poiseuille profile, no-slip at the walls, its peak pushed
+ *            towards the outer wall of the bend (Dean flow) — each scintillating at random. On top, Fresnel-weighted
+ *            reflections of the room and the key light as a tight highlight.
  *
  * Coordinates are local px, y down. Angles in radians, clockwise from 3 o'clock.
  */
@@ -272,10 +358,9 @@ uniform float ringRadius;
 uniform float tubeRadius;
 uniform float3 light;
 uniform float2 shadowShift;
-uniform float fluidCenter;
-uniform float fluidLength;
-uniform float flowSpeed;
 uniform float flowPhase;
+uniform float flowRate;
+uniform float time;
 uniform float glow;
 layout(color) uniform half4 surfaceColor;
 layout(color) uniform half4 glassTint;
@@ -289,15 +374,12 @@ uniform float specular;
 uniform float shininess;
 uniform float shadowOpacity;
 """ + SDF_COMMON + """
-const float PI = 3.14159265;
 const float TAU = 6.28318531;
 // Inner radius of the bore, as a fraction of the tube: the rest is the glass wall.
 const float BORE = 0.78;
-
-// Shortest signed angle from b to a, in (−π, π].
-float turn(float a, float b) {
-    return mod(a - b + PI, TAU) - PI;
-}
+// Streamlines across the bore, and grains per streamline (an integer, so the ring closes without a seam).
+const float LANES = 7.0;
+const float GRAINS = 16.0;
 
 float noise2(float2 p) {
     float2 i = floor(p);
@@ -307,33 +389,37 @@ float noise2(float2 p) {
                mix(hash(i + float2(0.0, 1.0)), hash(i + float2(1.0, 1.0)), w.x), w.y);
 }
 
-// Position along the liquid at ring angle phi: radians from its centre, + towards its leading end.
-float along(float phi) {
-    float d = turn(phi, fluidCenter);
-    return flowSpeed < 0.0 ? -d : d;
+// Laminar speed across the bore (ub −1 inner wall … +1 outer wall), relative to the mean flow: zero at both walls,
+// fastest in the core, the peak pushed outwards by the bend (Dean flow), more so the faster it circulates.
+// A parabola averages 2/3 of its peak, so ×1.5 keeps the mean.
+float streamline(float ub) {
+    float d = 0.12 + min(abs(flowRate) * 0.03, 0.2);
+    float t = ub >= d ? (ub - d) / (1.0 - d) : (ub - d) / (1.0 + d);
+    return 1.5 * (1.0 - t * t);
 }
 
-// Radians inside the liquid (negative outside) at position a and lateral position ub (−1 … +1 across the bore).
-// Concave menisci: the liquid creeps along the walls. Flowing, the leading one flattens and the trailing one deepens.
-float fluidDepth(float a, float ub) {
-    float s = clamp(abs(flowSpeed) / 8.0, 0.0, 1.0);
-    float m = 0.4 * tubeRadius / ringRadius;
-    float reach = fluidLength * 0.5;
-    float creep = ub * ub - 0.5;
-    float head = reach + m * (1.0 - 0.6 * s) * creep;
-    float tail = -reach - m * (1.0 + 0.6 * s) * creep;
-    return min(head - a, a - tail);
-}
-
-// Light the empty glass picks up from the liquid: piped along the tube from its ends, a faint glow all round, and
-// the wet film the liquid leaves on the walls while it flows.
-float piped(float a) {
-    float reach = fluidLength * 0.5;
-    float gap = max(abs(a) - reach, 0.0);
-    float s = abs(flowSpeed);
-    float behind = max(-a - reach, 0.0);
-    float film = a < -reach ? exp(-behind / (0.08 + s * 0.07)) * min(s * 0.07, 0.45) : 0.0;
-    return exp(-gap / 0.3) * 0.5 + 0.03 + film;
+// Phosphor grains on one layer of streamlines: a soft dot per grain, scintillating. Each grain stays on its
+// streamline (laminar: no lateral mixing) and moves at that streamline's speed.
+float grains(float phi, float ub, float layer) {
+    float laneW = 2.0 / LANES;
+    float li = floor((ub + 1.0) / laneW + layer * 0.5);
+    float lc = (li + 0.5 - layer * 0.5) * laneW - 1.0;
+    if (abs(lc) > 0.92) return 0.0;
+    float circ = TAU * ringRadius;
+    float spacing = circ / GRAINS;
+    float x = mod((phi - flowPhase * streamline(lc)) * ringRadius, circ);
+    float cell = floor(x / spacing);
+    float id = hash(float2(li + layer * 31.0, cell));
+    float gx = (cell + 0.2 + 0.6 * hash(float2(cell, li + 7.0 + layer * 13.0))) * spacing;
+    float gy = (lc + (hash(float2(li, cell + 3.0 + layer)) - 0.5) * laneW * 0.6) * BORE * tubeRadius;
+    float r = 0.55 + 0.45 * hash(float2(id, 5.0));
+    float spot = 1.0 - smoothstep(r * 0.5, r + 0.6, length(float2(x - gx, ub * BORE * tubeRadius - gy)));
+    // Scintillation (as in radium paint): each grain flashes at a random moment about 1.5 times a second, rising
+    // at once and fading in ~80 ms; barely visible between flashes, so the glow stays soft.
+    float tt = time * 1.5 + id * 13.0;
+    float since = (fract(tt) - hash(float2(floor(tt), id * 91.0))) / 1.5;
+    float flash = since >= 0.0 ? exp(-since / 0.08) : 0.0;
+    return spot * (0.06 + 0.94 * flash);
 }
 
 // Fresnel reflectance (Schlick) across the tube at u.
@@ -351,11 +437,9 @@ float4 floorAt(float2 f) {
     float shadow = (1.0 - smoothstep(tubeRadius * 0.35, tubeRadius * 1.6, sd)) * shadowOpacity * 0.5;
     float caustic = exp(-sd * sd / (tubeRadius * tubeRadius * 0.05));
     float contact = exp(-cd / (tubeRadius * 0.45)) * shadowOpacity * 0.35;
-    float a = along(atan(g.y, g.x));
-    float inside = clamp(fluidDepth(a, 0.0) * ringRadius / tubeRadius + 0.5, 0.0, 1.0);
-    // Gaussian falloff: the light hugs the tube (a slower one would narrow into a ray towards the centre).
+    // Gaussian falloff: the light hugs the tube.
     float k = cd / (tubeRadius * 1.6);
-    float spill = min(mix(piped(a), 1.0, inside) * glow * exp(-k * k) * 0.32, 0.6);
+    float spill = min(glow * exp(-k * k) * 0.32, 0.6);
     float dark = max(shadow * (1.0 - 0.8 * caustic), contact) * (1.0 - spill);
     float3 rgb = shadowColor.rgb * dark + highlightColor.rgb * caustic * shadowOpacity * 0.18 + emission.rgb * spill;
     return float4(rgb, min(dark + spill, 1.0));
@@ -376,43 +460,34 @@ half4 main(float2 p) {
     float nz = sqrt(max(1.0 - u * u, 0.0));
     float3 n = float3(radial * u, nz);
 
-    // The empty glass: the floor under it through a cylindrical lens, absorbed by thickness.
+    // The glass: the floor under it through a cylindrical lens, absorbed by thickness, glowing with piped light.
     float4 under = floorAt(center + radial * (ringRadius - u * tubeRadius * 0.6));
     float3 floorC = surfaceColor.rgb * (1.0 - under.a) + under.rgb;
     float3 c = mix(glassTint.rgb, floorC, exp(-absorption * 2.0 * nz));
-
-    // Light piped by the glass from the liquid, strongest along the walls; right past the liquid's ends the glass
-    // fills with its light over about a tube's width.
-    float a = along(atan(q.y, q.x));
-    float ub = u / BORE;
-    float depthPx = fluidDepth(a, clamp(ub, -1.0, 1.0)) * rho;
     float wall = 0.2 + 0.8 * (u * u) * (u * u);
-    float endFill = exp(-max(-depthPx, 0.0) / (tubeRadius * 1.3)) * 0.5;
-    c = mix(c, emission.rgb, clamp((piped(a) * wall * 0.7 + endFill) * glow, 0.0, 0.85));
+    c = mix(c, emission.rgb, clamp(glow * wall * 0.5, 0.0, 0.85));
 
-    // The liquid in the bore.
+    // The liquid filling the bore.
     float inBore = clamp((BORE - abs(u)) * tubeRadius + 0.5, 0.0, 1.0);
-    float fluid = clamp(depthPx + 0.5, 0.0, 1.0) * inBore;
-    if (fluid > 0.0) {
+    if (inBore > 0.0) {
+        float phi = atan(q.y, q.x);
+        float ub = clamp(u / BORE, -1.0, 1.0);
         float nb = sqrt(max(1.0 - ub * ub, 0.0));
-        // Currents: forward in the core, back along the walls (Taylor flow), advected by the distance flowed.
-        float arc = a * ringRadius / tubeRadius;
-        float shear = flowPhase * ringRadius / tubeRadius * 0.12 * (ub * ub * 2.0 - 0.67);
-        float current = noise2(float2(arc * 1.1 - shear, ub * 1.6 + 3.0)) * 0.6
-            + noise2(float2(arc * 2.3 - shear * 1.7, ub * 3.1)) * 0.4;
-        // Scintillation: fine grains that travel with the liquid.
-        float grain = step(0.975, hash(floor(float2(a * rho, ub * tubeRadius) / 1.2) + 7.0));
+        // Soft glow carried at the mean flow (noise sampled round a circle, so the ring has no seam).
+        float theta = phi - flowPhase;
+        float2 around = float2(cos(theta), sin(theta));
+        float rr = ringRadius / tubeRadius * 0.6 + ub * 1.2;
+        float cloud = noise2(around * rr + 11.0) * 0.6 + noise2(around * rr * 2.1 + 3.0) * 0.4;
         float bright = dot(surfaceColor.rgb, float3(0.299, 0.587, 0.114));
-        float3 radium = emission.rgb * glow * (0.85 + 0.3 * current) + highlightColor.rgb * grain * 0.3 * glow;
+        float3 radium = emission.rgb * glow * (0.8 + 0.2 * nb) * (0.85 + 0.3 * cloud);
         // Densest at the core: it burns towards white on dark surfaces and stays saturated on bright ones.
-        radium = mix(radium, highlightColor.rgb, clamp(nb * nb * glow * mix(0.35, 0.05, bright), 0.0, 1.0));
+        radium = mix(radium, highlightColor.rgb, clamp(nb * nb * glow * mix(0.3, 0.05, bright), 0.0, 1.0));
+        float g = grains(phi, ub, 0.0) + grains(phi, ub, 1.0);
+        radium += mix(highlightColor.rgb, emission.rgb, 0.35) * g * glow;
         // Unlit, it still reads as liquid: the emission colour, dimmed by the glass.
         float3 liquid = mix(mix(c, emission.rgb * 0.45, 0.7), radium, clamp(glow, 0.0, 1.0));
         // Thin at the walls of the bore, so it is partly transparent there.
-        float density = 1.0 - exp(-4.0 * nb);
-        // The meniscus catches the light: a thin bright line where the liquid ends.
-        float meniscus = exp(-depthPx * depthPx / 2.0) * 0.35 * clamp(glow, 0.3, 1.0);
-        c = mix(c, liquid + highlightColor.rgb * meniscus, fluid * density);
+        c = mix(c, liquid, inBore * (1.0 - exp(-4.0 * nb)));
     }
 
     // Reflections: the room (bright towards the key light, dim away from it) and a soft studio window, weighted by
@@ -447,8 +522,9 @@ private fun HaloLogoRestPreview() = HaloPreview {
 @Composable
 private fun HaloLogoFlowPreview() = HaloPreview {
     Row(horizontalArrangement = Arrangement.spacedBy(HaloTheme.spacing.lg)) {
-        HaloLogoFrame(fluidAngle = HALO_LOGO_REST_ANGLE, flowSpeed = 0f, glow = 0f)
-        HaloLogoFrame(fluidAngle = 120f, flowSpeed = 400f, glow = 1f)
-        HaloLogoFrame(fluidAngle = HALO_LOGO_REST_ANGLE, flowSpeed = 0f, glow = 1.6f)
+        HaloLogoFrame(flowRate = 0f, glow = 0f)
+        HaloLogoFrame(flowRate = 20f, glow = 1f)
+        HaloLogoFrame(flowRate = 340f, glow = 1f)
+        HaloLogoFrame(flowRate = 20f, glow = 1.6f)
     }
 }
