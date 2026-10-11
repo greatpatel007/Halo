@@ -78,14 +78,14 @@ object HaloTheme {
  * configuration's night mode, which the app drives through the platform's per-app night mode so the splash,
  * system bars and Compose always agree.
  *
- * @param light the scene light; by default world-fixed, so it turns as the phone turns (decision D6).
+ * @param light the scene light; null = the world-fixed key light, which turns as the phone turns (decision D6).
  * @param motion defaults to the system: "Remove animations" (animator scale 0) switches to reduced motion.
  * @param hapticObserver sees every haptic token played (Showroom haptic log).
  */
 @Composable
 fun HaloTheme(
     colors: HaloColors = rememberSystemHaloColors(),
-    light: HaloLight = rememberKeyLight(colors.isDark),
+    light: HaloLight? = null,
     effects: HaloEffects = remember(colors.isDark) { haloEffects(colors.isDark) },
     materials: HaloMaterials = remember(colors.isDark) { haloMaterials(colors.isDark) },
     motion: HaloMotion = rememberSystemHaloMotion(),
@@ -96,6 +96,7 @@ fun HaloTheme(
     val haptics = rememberHaloHaptics(hapticObserver)
     val hdr = rememberHaloHdr()
     val runtime = rememberHaloRuntime(reducedMotion = motion.reduced, timeScale = motion.scale)
+    val sceneLight = light ?: rememberKeyLight(colors.isDark, runtime)
     val selection = remember(colors) {
         TextSelectionColors(
             handleColor = colors.accent.fill,
@@ -105,7 +106,7 @@ fun HaloTheme(
     CompositionLocalProvider(
         LocalHaloColors provides colors,
         LocalHaloTypography provides typography,
-        LocalHaloLight provides light,
+        LocalHaloLight provides sceneLight,
         LocalHaloEffects provides effects,
         LocalHaloMaterials provides materials,
         LocalHaloMotion provides motion,

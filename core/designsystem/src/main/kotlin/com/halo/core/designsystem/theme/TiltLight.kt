@@ -1,20 +1,11 @@
 package com.halo.core.designsystem.theme
 
-import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
-import android.os.PowerManager
-import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.halo.core.designsystem.runtime.HaloRuntime
+import com.halo.core.designsystem.runtime.HaloSensor
+import kotlin.math.abs
 import kotlin.math.asin
 import kotlin.math.exp
 import kotlin.math.min
@@ -26,64 +17,45 @@ import kotlin.math.sqrt
  * that rotation; applying it to the key light makes every highlight, rim and light-caused shadow shift together.
  *
  * Practicalities, not physics: the holding angle you settle into becomes "neutral" again over a few seconds (so the
- * light isn't permanently off when the phone lies flat), the swing is capped, and it is smoothed. The sensor runs
- * only while the app is in the foreground, at ~30 Hz, and never under reduced motion or battery saver.
+ * light isn't permanently off when the phone lies flat), the swing is capped, and it is smoothed. Gravity comes from
+ * the runtime's shared sensors, which already stop in the background, under reduced motion, battery saver or heat;
+ * when they stop, the light returns to its designed direction.
  */
 @Composable
-fun rememberLightRig(): LightRig {
-    val context = LocalContext.current
+fun rememberKeyLight(dark: Boolean, runtime: HaloRuntime): HaloLight {
     val rig = remember { LightRig() }
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val state by lifecycle.currentStateFlow.collectAsState()
-    val reduced = remember(context) {
-        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    DisposableEffect(runtime) {
+        val filter = GravityFilter(rig)
+        val sub = runtime.sensors.subscribe(
+            HaloSensor.Gravity,
+            onStop = {
+                filter.reset()
+                rig.rotation = LightRotation.None
+            },
+        ) { values, time -> filter.onGravity(values, time) }
+        onDispose { sub.close() }
     }
-    val running = state.isAtLeast(Lifecycle.State.STARTED) && !reduced
-    DisposableEffect(running) {
-        val tracker = if (running) GravityTracker(context, rig).also { it.start() } else null
-        onDispose {
-            tracker?.stop()
-            rig.rotation = LightRotation.None
-        }
-    }
-    return rig
+    return remember(dark, rig) { haloKeyLight(dark, rig) }
 }
 
-/** Gravity → the rotation since the holding angle → [LightRig.rotation], smoothed. */
-private class GravityTracker(context: Context, private val rig: LightRig) : SensorEventListener {
-    private val sensors = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-    private val power = context.getSystemService(PowerManager::class.java)
-    private val sensor = sensors?.getDefaultSensor(Sensor.TYPE_GRAVITY) ?: sensors?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+/** Gravity → the rotation since the holding angle → [LightRig.rotation], smoothed. Pure: no platform calls. */
+internal class GravityFilter(private val rig: LightRig) {
     private var reference: FloatArray? = null
     // The smoothed rotation as a rotation vector (axis × angle).
     private val current = FloatArray(3)
     private var lastNanos = 0L
-    private var sincePowerCheck = POWER_CHECK_S
-    private var saving = false
 
-    fun start() {
-        val s = sensor ?: return
-        sensors?.registerListener(this, s, SAMPLE_PERIOD_US)
+    fun reset() {
+        reference = null
+        current.fill(0f)
+        lastNanos = 0L
     }
 
-    fun stop() {
-        sensors?.unregisterListener(this)
-    }
-
-    override fun onSensorChanged(event: SensorEvent) {
-        val dt = if (lastNanos == 0L) 0f else min((event.timestamp - lastNanos) / 1e9f, MAX_DT_S)
-        lastNanos = event.timestamp
-        sincePowerCheck += dt
-        if (sincePowerCheck >= POWER_CHECK_S) {
-            sincePowerCheck = 0f
-            saving = power?.isPowerSaveMode == true
-        }
-        if (saving) {
-            if (rig.rotation != LightRotation.None) rig.rotation = LightRotation.None
-            return
-        }
-        // Sensor axes (x right, y up, z out) → screen axes (x right, y down, z out).
-        val g = normalised(event.values[0], -event.values[1], event.values[2]) ?: return
+    fun onGravity(values: FloatArray, timestampNanos: Long) {
+        val dt = if (lastNanos == 0L) 0f else min((timestampNanos - lastNanos) / 1e9f, MAX_DT_S)
+        lastNanos = timestampNanos
+        // Device axes (x right, y up, z out) → screen axes (x right, y down, z out).
+        val g = normalised(values[0], -values[1], values[2]) ?: return
         val ref = reference ?: g.copyOf().also { reference = it }
         val target = lightRotationVector(ref, g)
         // Smooth towards the target rotation; slowly re-centre the reference on the current holding angle.
@@ -101,37 +73,24 @@ private class GravityTracker(context: Context, private val rig: LightRig) : Sens
         val next = if (angle < 1e-4f) LightRotation.None
         else LightRotation(current[0] / angle, current[1] / angle, current[2] / angle, angle)
         val prev = rig.rotation
-        val moved = kotlin.math.abs(next.angle - prev.angle) > EPSILON ||
-            kotlin.math.abs(next.ax - prev.ax) + kotlin.math.abs(next.ay - prev.ay) + kotlin.math.abs(next.az - prev.az) > EPSILON
+        val moved = abs(next.angle - prev.angle) > EPSILON ||
+            abs(next.ax - prev.ax) + abs(next.ay - prev.ay) + abs(next.az - prev.az) > EPSILON
         if (moved) rig.rotation = next
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-
-    companion object {
-        /** ~30 Hz. */
-        private const val SAMPLE_PERIOD_US = 33_333
-        private const val MAX_DT_S = 0.1f
+    private companion object {
+        const val MAX_DT_S = 0.1f
         /** Smoothing of the light's motion (s). */
-        private const val SMOOTH_S = 0.12f
+        const val SMOOTH_S = 0.12f
         /** How long a new holding angle takes to become neutral (s). */
-        private const val RECENTRE_S = 4f
-        private const val EPSILON = 0.002f
-        private const val POWER_CHECK_S = 1f
+        const val RECENTRE_S = 4f
+        const val EPSILON = 0.002f
 
         fun normalised(x: Float, y: Float, z: Float): FloatArray? {
             val l = sqrt(x * x + y * y + z * z)
             return if (l < 1e-3f) null else floatArrayOf(x / l, y / l, z / l)
         }
-
     }
-}
-
-/** The theme's key light, world-fixed through [rememberLightRig]. */
-@Composable
-fun rememberKeyLight(dark: Boolean): HaloLight {
-    val rig = rememberLightRig()
-    return remember(dark, rig) { haloKeyLight(dark, rig) }
 }
 
 /** Largest swing of the light (rad, ≈30°). */

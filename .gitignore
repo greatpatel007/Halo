@@ -25,3 +25,6 @@ shots/
 
 # Local session state (resume notes) — never committed
 SESSION_STATE.md
+
+# Python bytecode (helper scripts)
+__pycache__/

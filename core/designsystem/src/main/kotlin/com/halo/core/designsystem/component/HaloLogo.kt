@@ -1,11 +1,6 @@
 package com.halo.core.designsystem.component
 
-import android.content.Context
 import android.graphics.RuntimeShader
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +27,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -43,6 +37,7 @@ import com.halo.core.designsystem.foundation.HaloPreview
 import com.halo.core.designsystem.foundation.HaloPressable
 import com.halo.core.designsystem.foundation.material.SDF_COMMON
 import com.halo.core.designsystem.foundation.rememberPressProgress
+import com.halo.core.designsystem.runtime.HaloSensor
 import com.halo.core.designsystem.runtime.rememberAmbient
 import com.halo.core.designsystem.theme.HaloHaptic
 import com.halo.core.designsystem.theme.HaloSpring
@@ -93,7 +88,6 @@ fun HaloLogo(
         abs(flow.rate - DRIVE) >= CALM_RATE || glow.isRunning || press.value != 0f
     }
     val running = ambient.running
-    val context = LocalContext.current
 
     // Appear: the liquid lights up and the pump kicks it round once.
     LaunchedEffect(live) {
@@ -104,20 +98,15 @@ fun HaloLogo(
         flow.push(TAP_IMPULSE)
         glow.animateTo(1f, motionNow.spring(HaloSpring.Gentle))
     }
-    // Gyroscope: the glass turns with the phone, the liquid's inertia makes it lag (only while running).
+    // Gyroscope (shared, from the runtime): the glass turns with the phone, the liquid's inertia makes it lag.
     DisposableEffect(running) {
-        val sensors = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-        val gyro = sensors?.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-        val listener = object : SensorEventListener {
-            // z is counter-clockwise about the screen normal; the ring's angles run clockwise.
-            override fun onSensorChanged(event: SensorEvent) { flow.glassSpin = -event.values[2] }
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+        // z is counter-clockwise about the screen normal; the ring's angles run clockwise.
+        val sub = if (running) {
+            runtime.sensors.subscribe(HaloSensor.Gyroscope, onStop = { flow.glassSpin = 0f }) { values, _ -> flow.glassSpin = -values[2] }
+        } else {
+            null
         }
-        if (running && gyro != null) sensors.registerListener(listener, gyro, GYRO_PERIOD_US)
-        onDispose {
-            sensors?.unregisterListener(listener)
-            flow.glassSpin = 0f
-        }
+        onDispose { sub?.close() }
     }
 
     val glass: @Composable () -> Unit = {
@@ -294,8 +283,6 @@ internal const val VISCOUS_S = 1.4f
 internal const val TAP_IMPULSE = 6f
 /** Below this difference from the drive the flow counts as calm (the clock then steps it at ~30 fps). */
 private const val CALM_RATE = 0.05f
-/** Gyroscope sampling period (µs), ~30 Hz. */
-private const val GYRO_PERIOD_US = 33_333
 /** Fixed moment for [HaloLogoFrame]. */
 private const val FRAME_PHASE = 0.6f
 private const val FRAME_TIME = 0.37f

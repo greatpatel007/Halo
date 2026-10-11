@@ -23,20 +23,41 @@ import androidx.compose.runtime.setValue
  */
 @Stable
 class HaloPolicy internal constructor() {
+    private var foregroundState by mutableStateOf(false)
+    private var reducedState by mutableStateOf(false)
+    private var powerSaveState by mutableStateOf(false)
+    private var hotState by mutableStateOf(false)
+
+    /**
+     * Called synchronously on every change. Services that hold hardware (sensors) must react even when no frames are
+     * produced, e.g. the moment the app goes to the background, so they can't wait for a recomposition.
+     */
+    internal var onChange: () -> Unit = {}
+
     /** The app is at least STARTED (visible to the user). */
-    var foreground: Boolean by mutableStateOf(false)
-        internal set
+    var foreground: Boolean
+        get() = foregroundState
+        internal set(value) = update(foregroundState != value) { foregroundState = value }
 
     /** Reduced motion: the system's "remove animations" or the Showroom simulation. */
-    var reducedMotion: Boolean by mutableStateOf(false)
-        internal set
+    var reducedMotion: Boolean
+        get() = reducedState
+        internal set(value) = update(reducedState != value) { reducedState = value }
 
-    var powerSave: Boolean by mutableStateOf(false)
-        internal set
+    var powerSave: Boolean
+        get() = powerSaveState
+        internal set(value) = update(powerSaveState != value) { powerSaveState = value }
 
     /** The phone is hot (thermal status SEVERE or worse): decorative motion stops so it can cool down. */
-    var hot: Boolean by mutableStateOf(false)
-        internal set
+    var hot: Boolean
+        get() = hotState
+        internal set(value) = update(hotState != value) { hotState = value }
+
+    private inline fun update(changed: Boolean, write: () -> Unit) {
+        if (!changed) return
+        write()
+        onChange()
+    }
 
     /** Continuous, decorative motion (ambient effects) and the sensors that drive it may run. */
     val ambientAllowed: Boolean by derivedStateOf { foreground && !reducedMotion && !powerSave && !hot }

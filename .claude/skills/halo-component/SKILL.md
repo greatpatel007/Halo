@@ -91,7 +91,10 @@ tilt, and anything that emits light glows past white on HDR screens. All of that
     `rememberAmbient(HaloTheme.runtime, enabled) { dt -> …; busy }` and attaches `ambient.visibility` to its element.
     The runtime's clock steps it only while it is visible, the app is foregrounded and the policy allows (no reduced
     motion, battery saver or heat), at full rate while busy and ~30 fps when calm, nothing when still. Never write
-    your own frame loop, lifecycle, power or thermal checks; gate extras (sensors) on `ambient.running`. Measure it: frames over
+    your own frame loop, lifecycle, power or thermal checks. Motion sensors come only from
+    `HaloTheme.runtime.sensors.subscribe(HaloSensor.X, onStop = { settle }) { values, t -> … }`, subscribed while
+    `ambient.running` (one shared listener per sensor; the hub stops them in the background, battery saver, heat or
+    reduced motion). Never register a `SensorManager` listener yourself. Measure it: frames over
     5 s visible / scrolled away / backgrounded / reduced motion, and report the numbers. Sensors (gyroscope,
     gravity) follow the same rules at ~30 Hz.
 14. **Prove the physics.** Pure models (dynamics, trajectories, haptic plans, synthesised sound) live in plain
@@ -206,7 +209,8 @@ tilt feel, 120 Hz).
 - **Feedback** (`core/designsystem/.../feedback`): `HaloPattern` + `Patterns` (tokens), `HapticPlan` (tiers),
   `HapticPlayer`, `SoundSynth` + `SoundEngine`, `TideFeedback` / `TideSound` (live feedback from a trajectory).
 - **Runtime** (`runtime/`, proposal 0003): `HaloRuntime` (`HaloTheme.runtime`) = `HaloPolicy` (foreground, reduced
-  motion, battery saver, thermal) + `HaloClock` / `rememberAmbient` (the one frame clock for continuous effects).
+  motion, battery saver, thermal) + `HaloClock` / `rememberAmbient` (the one frame clock for continuous effects) +
+  `HaloSensors` (shared, ref-counted gravity/gyroscope).
 - **Light & HDR** (`theme/`): `HaloLight` + `LightRig` + `rememberLightRig` (world-fixed tilt light), `HaloHdr`.
 - **Reference implementations, one per archetype built so far:**
   - `HaloButton` (Pressable: press morph, layout-phase collapse)

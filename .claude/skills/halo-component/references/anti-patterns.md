@@ -61,5 +61,7 @@
   the screen).
 - Boosting reflected light for HDR (only emission goes above white).
 - Continuous animation that runs off screen, in the background, in battery saver or under reduced motion.
+- Registering sensors or reading lifecycle/power/thermal state in a component (use `HaloTheme.runtime`).
+- Reacting to the app going to the background through recomposition: no frames arrive there, so hardware stays on.
 - "Physics" faked with easing curves when a spring, viscosity or inertia model is what the eye expects.
 - Judging motion or sound from stills/ears alone: record it, measure it, test the model.
