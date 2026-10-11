@@ -49,3 +49,14 @@ Halo looks bespoke but must *behave* like the best first-party Android apps.
 - per-app language
 - splash screen API
 - `BlurMaskFilter` (hardware)
+
+
+## Hardware: haptics, sound, sensors, HDR
+- **Haptics vary by phone.** Never assume an actuator: the feedback engine probes it once and renders each pattern on
+  the richest tier (envelope → primitives → amplitude → basic). Basic motors only get strong moments.
+- **Sound etiquette.** UI sounds follow the ringer (silent/vibrate = none) and the system touch-sounds setting, play as
+  sonification, and are short and quiet. Sound and haptic are synced (measured audio latency, ≤ 25 ms wait).
+- **Sensors** (gravity for the tilt light, gyroscope for inertia): ~30 Hz, foreground only, off under reduced motion
+  and battery saver, unregistered on dispose; write state only when the value really changed.
+- **HDR** (Android 14+): the theme opts the window into HDR only on HDR-capable displays and requests 2.5× headroom;
+  `HaloTheme.hdr.headroom` stays 1 elsewhere, so SDR rendering is unchanged.

@@ -50,3 +50,16 @@
 - Business logic, formatting rules or data loading inside a design-system component.
 - `composed {}` modifiers, `remember` inside draw lambdas, allocation in draw.
 - Public API without `modifier`, or with `modifier` not as the first optional parameter.
+
+
+## Sensory, light and power
+- A user action with no haptic, or a haptic with no matching sound designed for it; calling vibration/audio APIs
+  outside `feedback/`.
+- A uniform motor buzz for something continuous (use a pattern that follows the motion: grains, envelopes).
+- Haptics or sounds on passive updates, scrolls or every animation frame.
+- Reading `HaloTheme.light` direction or `HaloTheme.hdr` in composition (a tilt or brightness change would recompose
+  the screen).
+- Boosting reflected light for HDR (only emission goes above white).
+- Continuous animation that runs off screen, in the background, in battery saver or under reduced motion.
+- "Physics" faked with easing curves when a spring, viscosity or inertia model is what the eye expects.
+- Judging motion or sound from stills/ears alone: record it, measure it, test the model.

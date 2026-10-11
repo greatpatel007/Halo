@@ -134,3 +134,10 @@ Components pick a material role, never their own albedo, gloss or grain.
 | `Celebrate` | payment sent |
 
 Call `haptics.perform(token)`. Use `haptics.tick(intensity 0..1)` for charging progress and `haptics.cancel()` to abort a composition.
+
+
+## Light & HDR (`HaloTheme.light`, `HaloTheme.hdr`)
+- `light`: the one key light (top-left), **world-fixed**: its direction turns with device tilt via `LightRig`
+  (gravity, ≤ 30° swing, smoothed, re-centres on the holding angle over ~4 s). Read `x/y/z/shadowDx/shadowDy` in draw only.
+- `hdr.headroom` / `hdr.emission`: how much brighter than SDR white the display can go (1 on SDR; emission capped at
+  2.5×). Multiply emitted light only, in draw/shader code.

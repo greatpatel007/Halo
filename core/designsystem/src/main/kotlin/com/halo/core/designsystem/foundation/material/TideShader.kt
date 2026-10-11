@@ -33,6 +33,8 @@ uniform float amplitude;
 uniform float smear;
 uniform float time;
 uniform float swap;
+// HDR: gain for emitted light (1 on SDR). Foam and glints catch the light and may sparkle above white.
+uniform float hdr;
 layout(color) uniform half4 foam;
 uniform float4 keep;
 uniform float keepRadius;
@@ -133,6 +135,7 @@ half4 tide(float2 p) {
     float glint = pow(abs(sin((across + meander * 40.0) / (grain * 9.0) + flow.x * 6.0)), 24.0)
         * exp(-abs(x + dissolve * 3.0) / dissolve) * 0.25;
     c.rgb += foam.rgb * half(glint) * c.a;
+    c.rgb += foam.rgb * half((crest * 0.55 + glint) * (hdr - 1.0)) * c.a;
     return c;
 }
 

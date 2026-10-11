@@ -50,6 +50,12 @@ default location) by itself. Never put machine-specific paths in `gradle.propert
 - **Dark and light themes ship together.** Every component and page is verified in both (decision D1).
 - Shadows only as consequences of the scene light (contact shadow / AO via the material system). Never
   decorative drop shadows. One key light, top-left (decisions D3/D4).
+- The key light is world-fixed: it turns with device tilt (`LightRig`). Read `HaloTheme.light` direction and
+  `HaloTheme.hdr` only in draw/shader code. Only emitted light (glows, liquid, sparks) is boosted on HDR screens.
+- Motion follows Apple's fluid-interface guidance and real physics (springs, momentum, viscosity, inertia). Every user
+  action plays one `HaloHaptic` token (haptic + synthesised sound, rendered per actuator tier; only `feedback/` touches
+  vibration/audio APIs). Continuous animation runs only while visible, foregrounded, outside battery saver and
+  reduced motion. Physics and feedback models are unit-tested (`halo.py gradle :core:designsystem:testDebugUnitTest`).
 
 ## Docs
 - Tokens and design rules: `.claude/skills/halo-component/references/` (tokens, motion recipes, haptics,

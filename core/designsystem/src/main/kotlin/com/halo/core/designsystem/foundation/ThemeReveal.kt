@@ -312,6 +312,7 @@ fun HaloThemeRevealHost(
     val effects = HaloTheme.effects
     val haptics = HaloTheme.haptics
     val foam = HaloTheme.light.highlight.toArgb()
+    val hdr = HaloTheme.hdr
     val density = LocalDensity.current
     val band = with(density) { effects.tideBand.toPx() }
     val dissolve = with(density) { effects.tideDissolve.toPx() }
@@ -379,6 +380,7 @@ fun HaloThemeRevealHost(
                             setFloatUniform("time", state.time)
                             setFloatUniform("swap", if (tide && liveIsBehind) 0f else 1f)
                             setColorUniform("foam", foam)
+                            setFloatUniform("hdr", hdr.emission)
                             val keep = if (tide) state.keep else NO_KEEP
                             setFloatUniform("keep", keep.left, keep.top, keep.right, keep.bottom)
                             setFloatUniform("keepRadius", keep.minDimension / 2f)

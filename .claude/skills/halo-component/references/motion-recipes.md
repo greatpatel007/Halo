@@ -155,3 +155,22 @@ When `motion.reduced` is on, draw a static `bg.raised` block instead.
 Use `SharedTransitionLayout` with `Modifier.sharedElement(rememberSharedContentState(key), animatedVisibilityScope,
 boundsTransform = { _, _ -> motion.spring(HaloSpring.Gentle, Rect.VisibilityThreshold) })` around NavHost destinations.
 Design-system components expose a `modifier` so features can attach this.
+
+
+## Physics-first motion (Apple's fluid-interface guidance + real-world physics)
+- **Response first.** The touched control moves on the next frame from local state; slow work (theme, data) lands
+  after it (`TRIGGER_LEAD_FRAMES`). Cause → effect, never both at once.
+- **Model the real thing.** Mass → critically damped spring; water/air → kicked spring that only decelerates (Tide);
+  liquid → viscous relaxation `v += (target − v)(1 − e^(−dt/τ))`; anything in a moving phone → inertia from the
+  gyroscope (lags, then catches up). Keep the model pure Kotlin and unit-test it.
+- **Reuse the trajectory.** An analytic trajectory (e.g. a critically damped spring's `v(t)`) drives the feedback too:
+  haptics pre-computed from it, sound following it, a reversal retargeting both.
+- **Continuous motion is gated** (SKILL non-negotiable 13): visible, foreground, no battery saver, no reduced motion;
+  ~30 fps when calm; zero frames when still or hidden. Measure it with `dumpsys gfxinfo` frame counts.
+
+## Verifying motion
+Stills lie about motion. Record at real speed and review frames:
+`adb shell screenrecord --size 640x1428 --bit-rate 16000000 --time-limit 4 /sdcard/x.mp4`, pull it, and extract frames
+at fixed steps (an `AVAssetImageGenerator` helper on macOS, or ffmpeg). Raw `screencap` grabs are ~1 s apart and
+stall under load: don't use them for timing. Frame-phase timings: `dumpsys gfxinfo <pkg> framestats` (the buffer holds
+only the last 120 frames, so read it right after the interaction).

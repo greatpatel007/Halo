@@ -1,6 +1,7 @@
 package com.halo.core.designsystem.foundation
 
 import android.graphics.BlurMaskFilter
+import android.graphics.ColorSpace
 import android.graphics.Paint
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.CacheDrawModifierNode
@@ -13,17 +14,20 @@ import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.DelegatingNode
+import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Dp
+import com.halo.core.designsystem.theme.LocalHaloHdr
 
 /**
  * Light emitted by an element — Halo's replacement for drop shadows in dark mode. A blurred copy of
  * [shape], grown by [spread], painted behind the element. [intensity] is read at draw time, so animating
  * it never recomposes. The outline is rebuilt each draw (into a reused path), so a [shape] that morphs
  * (reads animated state in `createOutline`) is followed exactly. Recomposing with equal arguments keeps the
- * cached paint and draw.
+ * cached paint and draw. Glow is emitted light: on an HDR display it is brighter than white (`HaloTheme.hdr`).
  */
 fun Modifier.haloGlow(
     color: Color,
@@ -59,7 +63,7 @@ private class GlowNode(
     private var radius: Dp,
     private var spread: Dp,
     private var intensity: () -> Float,
-) : DelegatingNode() {
+) : DelegatingNode(), CompositionLocalConsumerModifierNode {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val path = Path()
     private val draw = delegate(
@@ -73,7 +77,15 @@ private class GlowNode(
                 if (a > 0f) {
                     path.reset()
                     path.addOutline(shape.createOutline(grown, layoutDirection, this))
-                    paint.color = color.copy(alpha = color.alpha * a).toArgb()
+                    val gain = currentValueOf(LocalHaloHdr).emission
+                    if (gain > 1f) {
+                        // Extended range: the glow's colour scaled past SDR white by the display's headroom.
+                        paint.setColor(
+                            android.graphics.Color.pack(color.red * gain, color.green * gain, color.blue * gain, color.alpha * a, EXTENDED_SRGB),
+                        )
+                    } else {
+                        paint.color = color.copy(alpha = color.alpha * a).toArgb()
+                    }
                     drawIntoCanvas { canvas ->
                         val native = canvas.nativeCanvas
                         val save = native.save()
@@ -100,3 +112,5 @@ private class GlowNode(
         draw.invalidateDrawCache()
     }
 }
+
+private val EXTENDED_SRGB: ColorSpace = ColorSpace.get(ColorSpace.Named.EXTENDED_SRGB)

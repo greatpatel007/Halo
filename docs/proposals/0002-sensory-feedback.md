@@ -102,4 +102,13 @@ compatibility layer.
   - **Sync**: measured audio output latency; paired haptics wait for it (max 25 ms).
   - **Calibration**: per-phone strength ×0.5–1.5 (lab knob), applied to every tier's plan.
   - **Glass halo**: tapping it plays `Ping`, a glass tink.
-- Not yet: persisting the in-app switches and strength, `HapticGenerator`, HDR glow and tilt light (phase 4).
+- Phase 4 (2026-10-11):
+  - **Tilt light** (D6): the key light is world-fixed. Gravity gives the device's rotation since the holding angle;
+    the same rotation turns the light (Rodrigues), capped at 30°, smoothed, re-centring over ~4 s. State is read in
+    draw only, so a tilt redraws lit surfaces and never recomposes. Verified on the emulator with a simulated tilt;
+    `TiltLightTest`.
+  - **HDR glow**: on HDR displays (Android 14+) the window opts into HDR with 2.5× headroom; only emitted light (glass
+    halo liquid and spill, `haloGlow`, Tide foam and glints) is scaled by `HaloTheme.hdr.emission`. SDR unchanged
+    (verified on the emulator, which has no HDR screen; HDR itself is unverified).
+  - The `halo-component` skill now requires all of this for every new component.
+- Not yet: persisting the in-app switches and strength, `HapticGenerator`, 3D parallax (rest of D6).

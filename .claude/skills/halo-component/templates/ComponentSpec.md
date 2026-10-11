@@ -56,9 +56,15 @@ Colors, type, spacing, sizes, radius, stroke, effects, springs and haptics, by n
 |---|---|---|---|---|
 | press | scale | 1 → 0.97 | Snap | via HaloPressable |
 
-## 8. Haptics
-| Moment | Token | Timing |
-|---|---|---|
+## 8. Sound & haptics
+What it physically sounds and feels like, then the mapping. New patterns: haptic timeline (intensity/sharpness) and
+sound cue, and how they render per tier (envelope / primitives / amplitude / basic).
+| Moment | Token (or new pattern) | Haptic | Sound | Timing |
+|---|---|---|---|---|
+
+## 8b. Light & emission
+Which parts are lit by the scene light (and must read it in draw: it turns with tilt), which parts emit light (scaled
+by `hdr.emission` in draw), and the light-caused shadows.
 
 ## 9. Gestures
 Type, thresholds, velocity handling, cancellation. Write "none" if tap-only.
@@ -74,5 +80,10 @@ Long text, zero/huge values, rapid repeated input, interruption mid-animation, d
 
 ## 13. Verification
 - Lint: …
-- Screenshot: `shots/<id>.png`. Review notes against `pixel-perfect.md`.
-- Unverified: …
+- Unit tests: physics / trajectories / feedback plans / sound measurements.
+- Screenshot: `shots/<id>.png` (dark and light). Review notes against `pixel-perfect.md`.
+- Motion: real-speed recording reviewed frame by frame.
+- Feedback: haptic-log sequence; tier on the Haptics lab.
+- Tilt: highlights/shadows move under a simulated tilt.
+- Frame budget (continuous motion only): visible / off screen / background / reduced motion.
+- Unverified: haptic feel per tier, HDR, tilt feel, 120 Hz …

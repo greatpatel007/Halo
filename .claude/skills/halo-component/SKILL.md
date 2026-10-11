@@ -1,14 +1,18 @@
 ---
 name: halo-component
-description: Builds a production-grade, hand-made Jetpack Compose component for the Halo Bitcoin-wallet design system from a written requirement — spec, implementation, motion choreography, haptics, accessibility, Showroom page and registry entry, verified on a device screenshot. Use whenever the user asks to create, build, design or add a UI component, control, micro-interaction or animated element to Halo (e.g. "build a hold-to-send button", "add an amount keypad", "make the balance roll like an odometer"), or invokes /halo-component.
+description: Builds a production-grade, hand-made Jetpack Compose component for the Halo Bitcoin-wallet design system from a written requirement — spec, implementation, physics-based motion choreography, designed haptics and sound, world-fixed lighting and HDR emission, accessibility, Showroom page and registry entry, verified on a device screenshot. Use whenever the user asks to create, build, design or add a UI component, control, micro-interaction or animated element to Halo (e.g. "build a hold-to-send button", "add an amount keypad", "make the balance roll like an odometer"), or invokes /halo-component.
 argument-hint: "[ComponentName] [requirements…]"
 ---
 
 # Halo component forge
 
 You turn a requirement into a **finished design-system component**. Its bar is "2027-grade fintech app on
-Android": pixel-exact, physically animated, tactile, accessible and unmistakably native. Every component
-is built **from scratch** on Compose foundations and Halo tokens.
+Android": pixel-exact, physically animated, tactile, audible, lit by one world-fixed light, accessible and
+unmistakably native. Every component is built **from scratch** on Compose foundations and Halo tokens.
+
+Every component is a *sensory* object, not just a picture: it moves by real physics (Apple's fluid-interface
+guidance), it answers touch with a designed haptic and its sound, its highlights and shadows follow the device's
+tilt, and anything that emits light glows past white on HDR screens. All of that is in the non-negotiables below.
 
 ## The contract (all six or it isn't done)
 
@@ -64,6 +68,34 @@ is built **from scratch** on Compose foundations and Halo tokens.
    - Lighting is physical: one scene light (key light top-left). Depth comes from tone, rims, emission and
      light-caused shadows (contact/AO). Decorative drop shadows are banned.
 
+9. **Physics first (Apple's motion guidance).** Model motion on the real thing: springs (critically damped for
+   mass, underdamped only where a bounce is physical), momentum and viscosity, inertia. The touched control answers
+   on the next frame; the consequence grows out of it (cause → effect). If a motion has an analytic trajectory,
+   keep it: feedback and tests reuse it. Verify motion with a **real-speed recording** reviewed frame by frame
+   (`references/motion-recipes.md` → "Verifying motion"), not only stills.
+10. **Sensory feedback is designed with the motion.** Every user action plays one `HaloHaptic` token through
+    `HaloTheme.haptics` (it carries both the haptic and its synthesised sound; the engine renders the best tier this
+    phone supports and syncs the two). Pick the token whose *physics* matches the moment (click, tick, thud, glass
+    ping, rush…). A signature moment that the existing tokens don't capture gets a new pattern in
+    `feedback/Patterns.kt` (haptic timeline with intensity/sharpness + sound cue), designed in the spec's Sound &
+    haptics section, unit-tested per tier. A continuous effect drives *live* feedback from its own trajectory (the
+    Tide is the reference: `feedback/TideFeedback.kt`). Pass `pan` from the control's x for stereo placement. See
+    `references/haptics.md`.
+11. **One world-fixed light, read in draw.** `HaloTheme.light`'s direction turns with device tilt (`LightRig`), so read
+    `light.x/y/z/shadowDx/shadowDy` **only in draw lambdas or shader uniforms**, never in composition: a tilt must
+    redraw, not recompose. Shaded surfaces use the relief painters or their own shader with the `light` uniform.
+12. **Emitted light uses HDR.** If the component *emits* light (glow, liquid, sparks, foam), scale only the emitted
+    part by `HaloTheme.hdr.emission` (read in draw; 1 on SDR) and keep everything else in standard range. Reflected
+    light (highlights, surfaces, text) is never boosted. `haloGlow` already does this.
+13. **Continuous motion is gated.** Anything that animates without input runs only while it is visible
+    (`onGloballyPositioned` + `boundsInWindow`), the lifecycle is ≥ STARTED, battery saver is off and reduced motion
+    is off; it drops to ~30 fps when calm (skip state writes) and writes nothing when still. Measure it: frames over
+    5 s visible / scrolled away / backgrounded / reduced motion, and report the numbers. Sensors (gyroscope,
+    gravity) follow the same rules at ~30 Hz.
+14. **Prove the physics.** Pure models (dynamics, trajectories, haptic plans, synthesised sound) live in plain
+    Kotlin and get unit tests in `core/designsystem/src/test` (e.g. `FluidFlowTest`, `TideFeedbackTest`,
+    `TideClarityTest`). New sounds are measured (spectrum share, stereo correlation, peak), not only listened to.
+
 ## Workflow
 
 ### 0. Load context (always)
@@ -71,7 +103,8 @@ Read `references/tokens.md`, `docs/components/REGISTRY.md` and your archetype's 
 Skim `references/motion-recipes.md` for the patterns you'll need.
 
 ### 1. Design read
-State one line: `<Name> · <archetype> · <job> · <signature moment>`. Example:
+Before the line below, answer in one sentence each: *what real object or material is this, what physics moves it,
+what does touching it feel and sound like, does it emit light?* Then state one line: `<Name> · <archetype> · <job> · <signature moment>`. Example:
 `HaloHoldToSend · Gesture-commit · confirms a payment with a deliberate hold · the fill charges with a rising haptic and bursts into a check`.
 
 Archetypes: **Pressable, Toggle, Input, Value display, Gesture-commit, Container/Overlay, Feedback.**
@@ -99,6 +132,10 @@ Start from `templates/Component.kt.tmpl`. Keep one component family per file, wi
 - Resolve colors per variant/state in a private `@Composable` resolver; don't scatter `if`s across the draw code.
 - Previews: one `@Preview` per key state, wrapped in `HaloPreview { }`.
 - Lift a gesture or effect into `foundation/` only if a second component needs it.
+- Feedback: `haptics.perform(token, pan)` on the user action (not on passive updates); new patterns in
+  `feedback/Patterns.kt` with tests in `HapticPlanTest`/`SoundSynthTest`; only `feedback/` touches vibration/audio APIs.
+- Light & HDR: read `HaloTheme.light` direction and `HaloTheme.hdr.emission` inside draw/shader code only.
+- Continuous effects: gate them (non-negotiable 13) and keep their models pure and tested (14).
 
 ### 5. Showroom page
 Start from `templates/ShowroomPage.kt.tmpl`. It has three blocks:
@@ -119,7 +156,14 @@ python3 -I .claude/skills/halo-component/scripts/halo.py shot <id>
 1. The lint must report **OK**.
 2. `halo.py shot` builds, installs, deep-links to `halo://showroom/<id>` and saves `shots/<id>.png`. **Read the PNG.**
 3. Review it against `references/pixel-perfect.md` and your archetype's checklist.
-4. Fix, then repeat. Report the result honestly: anything not verified (e.g. how a haptic feels) is listed as unverified.
+4. Unit tests pass: `halo.py gradle :core:designsystem:testDebugUnitTest`.
+5. Feedback: the haptic log (dock → log) shows the right tokens in order; the Showroom **Haptics** lab shows this
+   phone's tier. The emulator plays sound but can't vibrate.
+6. Light: with a simulated tilt (`adb emu sensor set acceleration 6.5:7.3:0.81`, capture within ~0.6 s, reset to
+   `0:9.77:0.81`) highlights and shadows move with no layout change.
+7. Continuous motion: report the frame counts (non-negotiable 13).
+8. Fix, then repeat. Report the result honestly: anything not verified (how a haptic feels on a real actuator,
+   HDR on an HDR screen, 120 Hz feel) is listed as unverified.
 
 **Capturing interaction and motion states.** These are proven recipes; don't improvise coordinates or timing.
 - **Find, don't guess:** `halo.py find "<accessibility label>"` prints an element's bounds and centre in device px.
@@ -138,8 +182,9 @@ python3 -I .claude/skills/halo-component/scripts/halo.py shot <id>
 Add the row to `docs/components/REGISTRY.md`: name, archetype, status, file, deep link.
 
 ### 8. Report
-Give the design read, the files touched, any new tokens, the screenshot path, the checklist result and anything
-still needing a physical device (haptics, 120 Hz feel).
+Give the design read, the files touched, any new tokens or feedback patterns, the screenshot path, the checklist
+result, test and frame-budget numbers, and anything still needing a physical device (haptic feel per tier, HDR,
+tilt feel, 120 Hz).
 
 ## When the request conflicts with the system
 - **A color, size or curve outside the tokens:** propose a token, with the reason, in the report.
@@ -155,10 +200,16 @@ still needing a physical device (haptics, 120 Hz feel).
   - `HaloText`, `HaloSurface` / `Modifier.depth`
   - `backdropSource` / `backdropGlass`, `haloGlow`, `haloGrain`
   - `HaloSpinner`, `enterRise`, `AmountFormat`, `HaloPreview`
+  - `HaloThemeRevealHost` / the Tide (theme transition with live feedback)
+- **Feedback** (`core/designsystem/.../feedback`): `HaloPattern` + `Patterns` (tokens), `HapticPlan` (tiers),
+  `HapticPlayer`, `SoundSynth` + `SoundEngine`, `TideFeedback` / `TideSound` (live feedback from a trajectory).
+- **Light & HDR** (`theme/`): `HaloLight` + `LightRig` + `rememberLightRig` (world-fixed tilt light), `HaloHdr`.
 - **Reference implementations, one per archetype built so far:**
   - `HaloButton` (Pressable: press morph, layout-phase collapse)
   - `HaloRollingAmount` (Value display: per-digit odometer, TextMeasurer drawing)
   - `HaloHoldToSend` (Gesture-commit: manual `PressInteraction`, timed charge, clip-inverted label, draw-on check, burst)
+  - `HaloToggle` (Toggle: SDF-lit relief materials, measured Mechanical spring, response-first)
+  - `HaloLogo` (Feedback/brand: AGSL glass, real fluid physics, gyroscope inertia, gated continuous motion, HDR)
 - **Theme:** `core/designsystem/.../theme`. **Icons:** `icons/HaloIcons` + `HaloIcon`.
 - **Showroom chrome:** `feature/showroom/.../ui/ShowroomChrome.kt` (`ShowroomCard`, `SectionLabel`, `Knob`, `SpecLine`, `haloDepth`).
 - **References:**

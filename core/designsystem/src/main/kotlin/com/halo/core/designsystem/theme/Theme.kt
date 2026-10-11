@@ -62,6 +62,9 @@ object HaloTheme {
         @Composable @ReadOnlyComposable get() = LocalHaloMotion.current
     val haptics: HaloHaptics
         @Composable @ReadOnlyComposable get() = LocalHaloHaptics.current
+    /** HDR emission: read `emission` / `headroom` in the draw phase only. */
+    val hdr: HaloHdr
+        @Composable @ReadOnlyComposable get() = LocalHaloHdr.current
 }
 
 /**
@@ -69,13 +72,14 @@ object HaloTheme {
  * configuration's night mode, which the app drives through the platform's per-app night mode so the splash,
  * system bars and Compose always agree.
  *
+ * @param light the scene light; by default world-fixed, so it turns as the phone turns (decision D6).
  * @param motion defaults to the system: "Remove animations" (animator scale 0) switches to reduced motion.
  * @param hapticObserver sees every haptic token played (Showroom haptic log).
  */
 @Composable
 fun HaloTheme(
     colors: HaloColors = rememberSystemHaloColors(),
-    light: HaloLight = remember(colors.isDark) { haloKeyLight(colors.isDark) },
+    light: HaloLight = rememberKeyLight(colors.isDark),
     effects: HaloEffects = remember(colors.isDark) { haloEffects(colors.isDark) },
     materials: HaloMaterials = remember(colors.isDark) { haloMaterials(colors.isDark) },
     motion: HaloMotion = rememberSystemHaloMotion(),
@@ -84,6 +88,7 @@ fun HaloTheme(
 ) {
     val typography = remember { haloTypography() }
     val haptics = rememberHaloHaptics(hapticObserver)
+    val hdr = rememberHaloHdr()
     val selection = remember(colors) {
         TextSelectionColors(
             handleColor = colors.accent.fill,
@@ -98,6 +103,7 @@ fun HaloTheme(
         LocalHaloMaterials provides materials,
         LocalHaloMotion provides motion,
         LocalHaloHaptics provides haptics,
+        LocalHaloHdr provides hdr,
         LocalHaloContentColor provides colors.content.primary,
         LocalIndication provides HaloIndication(RectangleShape),
         LocalTextSelectionColors provides selection,

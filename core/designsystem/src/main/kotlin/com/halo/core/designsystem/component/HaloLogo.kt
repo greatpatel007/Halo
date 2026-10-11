@@ -259,6 +259,7 @@ private fun LogoGlass(
     val light = HaloTheme.light
     val glass = HaloTheme.materials.glass
     val emission = HaloTheme.colors.accent.fill
+    val hdr = HaloTheme.hdr
     val shader = remember { RuntimeShader(HALO_GLASS_AGSL) }
     val brush = remember(shader) { ShaderBrush(shader) }
     Spacer(
@@ -277,6 +278,7 @@ private fun LogoGlass(
                     setFloatUniform("flowRate", flowRate())
                     setFloatUniform("time", time())
                     setFloatUniform("glow", glow())
+                    setFloatUniform("hdr", hdr.emission)
                     setColorUniform("surfaceColor", surfaceColor.toArgb())
                     setColorUniform("glassTint", glass.tint.toArgb())
                     setColorUniform("environment", glass.environment.toArgb())
@@ -362,6 +364,8 @@ uniform float flowPhase;
 uniform float flowRate;
 uniform float time;
 uniform float glow;
+// HDR: gain for emitted light (1 on SDR displays). Only the liquid's light is boosted, never the glass or shadow.
+uniform float hdr;
 layout(color) uniform half4 surfaceColor;
 layout(color) uniform half4 glassTint;
 layout(color) uniform half4 environment;
@@ -428,6 +432,13 @@ float fresnel(float u) {
     return reflectance + (1.0 - reflectance) * pow(1.0 - nz, 5.0);
 }
 
+// The liquid's light spilled onto the floor at f (tint strength, as in floorAt).
+float spillLight(float2 f) {
+    float cd = abs(length(f - center) - ringRadius);
+    float k = cd / (tubeRadius * 1.6);
+    return min(glow * exp(-k * k) * 0.32, 0.6);
+}
+
 // What the ring does to the floor at f, premultiplied: shadow, caustic, and the liquid's light as a tint (its
 // alpha is its own strength, so it shows on ceramic as well as on black).
 float4 floorAt(float2 f) {
@@ -453,9 +464,12 @@ half4 main(float2 p) {
 
     float4 fx = floorAt(p);
     half4 floorOut = half4(fx);
+    // The spill is emitted light: on an HDR display it may be brighter than white.
+    floorOut.rgb += half3(emission.rgb * spillLight(p) * (hdr - 1.0));
     float cover = clamp(tubeRadius - abs(s) + 0.5, 0.0, 1.0);
     if (cover <= 0.0) return floorOut;
 
+    float3 lumen = float3(0.0);
     float u = clamp(s / tubeRadius, -1.0, 1.0);
     float nz = sqrt(max(1.0 - u * u, 0.0));
     float3 n = float3(radial * u, nz);
@@ -487,7 +501,9 @@ half4 main(float2 p) {
         // Unlit, it still reads as liquid: the emission colour, dimmed by the glass.
         float3 liquid = mix(mix(c, emission.rgb * 0.45, 0.7), radium, clamp(glow, 0.0, 1.0));
         // Thin at the walls of the bore, so it is partly transparent there.
-        c = mix(c, liquid, inBore * (1.0 - exp(-4.0 * nb)));
+        float weight = inBore * (1.0 - exp(-4.0 * nb));
+        c = mix(c, liquid, weight);
+        lumen = radium * weight * clamp(glow, 0.0, 1.0);
     }
 
     // Reflections: the room (bright towards the key light, dim away from it) and a soft studio window, weighted by
@@ -503,7 +519,9 @@ half4 main(float2 p) {
         + highlightColor.rgb * pow(max(facing, 0.0), 6.0) * 0.45;
     float spec = pow(max(facing, 0.0), shininess) * specular;
     c = c * (1.0 - fres) + env * fres + highlightColor.rgb * spec;
-    return mix(floorOut, half4(half3(softClip(c)), 1.0), half(cover));
+    // Standard range is soft-clipped as before; on HDR the liquid's own light rises above white on top of it.
+    float3 outC = softClip(c) + lumen * (hdr - 1.0) * (1.0 - fres);
+    return mix(floorOut, half4(half3(outC), 1.0), half(cover));
 }
 """
 
