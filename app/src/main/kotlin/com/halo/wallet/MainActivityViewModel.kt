@@ -7,7 +7,6 @@ import com.halo.core.model.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,23 +17,19 @@ class MainActivityViewModel @Inject constructor(
 ) : ViewModel() {
 
     /**
-     * The chosen appearance as soon as it is stored: true / false for Dark / Light, null to follow the system
-     * (and before the first read, when the platform's persisted per-app night mode is already right). The
-     * platform night mode applies the same choice, but its configuration change lands a few hundred ms later.
+     * The stored appearance. Before the first read it is System, which is right: the configuration already carries
+     * the platform's persisted per-app night mode.
      */
-    val darkOverride: StateFlow<Boolean?> = appearance.themeMode
-        .map { mode ->
-            when (mode) {
-                ThemeMode.Dark -> true
-                ThemeMode.Light -> false
-                ThemeMode.System -> null
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val themeMode: StateFlow<ThemeMode> = appearance.themeMode
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.System)
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { appearance.setThemeMode(mode) }
+    }
 
     /** Tooling / deep-link entry: `?theme=dark|light|system`. */
     fun applyThemeParam(value: String) {
         val mode = ThemeMode.entries.firstOrNull { it.name.equals(value, ignoreCase = true) } ?: return
-        viewModelScope.launch { appearance.setThemeMode(mode) }
+        setThemeMode(mode)
     }
 }

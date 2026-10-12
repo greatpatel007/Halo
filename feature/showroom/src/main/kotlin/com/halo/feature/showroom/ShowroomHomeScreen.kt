@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.halo.core.designsystem.host.HaloThemeSwitch
 import com.halo.core.designsystem.component.HaloLogo
 import com.halo.core.designsystem.foundation.AmountFormat
 import com.halo.core.designsystem.foundation.HaloDepth
@@ -46,7 +47,6 @@ import com.halo.core.designsystem.theme.HaloTheme
 import com.halo.feature.showroom.catalog.ShowroomCatalog
 import com.halo.feature.showroom.catalog.ShowroomPage
 import com.halo.feature.showroom.catalog.ShowroomSection
-import com.halo.feature.showroom.ui.AppearanceSwitch
 import com.halo.feature.showroom.ui.DockClearance
 import com.halo.feature.showroom.ui.SectionLabel
 import com.halo.feature.showroom.ui.haloDepth
@@ -61,7 +61,7 @@ fun ShowroomHomeScreen(
         uiState = uiState,
         pages = ShowroomCatalog.pages,
         onOpenPage = onOpenPage,
-        appearanceSwitch = { AppearanceSwitch() },
+        appearanceSwitch = { HaloThemeSwitch() },
     )
 }
 

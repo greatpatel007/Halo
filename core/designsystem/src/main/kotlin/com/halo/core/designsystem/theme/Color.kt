@@ -158,7 +158,24 @@ class HaloColors(
     val lightning: HaloAccentColors,
     val status: HaloStatusColors,
     val isDark: Boolean,
-)
+) {
+    /** These colours with other accent families (see [haloBrand]); [focus] is the focus ring's colour. */
+    fun copy(
+        accent: HaloAccentColors = this.accent,
+        bitcoin: HaloAccentColors = this.bitcoin,
+        lightning: HaloAccentColors = this.lightning,
+        focus: Color = line.focus,
+    ): HaloColors = HaloColors(
+        bg = bg,
+        content = content,
+        line = HaloLineColors(line.subtle, line.default, line.strong, focus, line.highlight),
+        accent = accent,
+        bitcoin = bitcoin,
+        lightning = lightning,
+        status = status,
+        isDark = isDark,
+    )
+}
 
 fun haloDarkColors(): HaloColors = with(HaloPalette) {
     HaloColors(

@@ -2,7 +2,6 @@ package com.halo.feature.showroom.debug
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,17 +35,16 @@ import androidx.compose.ui.unit.Dp
 import com.halo.core.designsystem.foundation.HaloDepth
 import com.halo.core.designsystem.foundation.HaloPressable
 import com.halo.core.designsystem.foundation.HaloText
-import com.halo.core.designsystem.foundation.HaloThemeRevealHost
 import com.halo.core.designsystem.foundation.backdropSource
 import com.halo.core.designsystem.foundation.enterRise
 import com.halo.core.designsystem.foundation.rememberHaloBackdrop
+import com.halo.core.designsystem.host.HaloApp
+import com.halo.core.designsystem.host.HaloAppearance
 import com.halo.core.designsystem.icons.HaloIcon
 import com.halo.core.designsystem.icons.HaloIcons
 import com.halo.core.designsystem.theme.HaloHaptic
 import com.halo.core.designsystem.theme.HaloMotion
 import com.halo.core.designsystem.theme.HaloTheme
-import com.halo.core.designsystem.theme.haloDarkColors
-import com.halo.core.designsystem.theme.haloLightColors
 import com.halo.core.designsystem.theme.rememberSystemHaloMotion
 import com.halo.feature.showroom.ui.haloDepth
 import kotlinx.coroutines.delay
@@ -79,13 +77,13 @@ private val GRID_STEPS = listOf(null, 4, 8)
 private val SLOW_MO = listOf(1f, 2f, 5f, 10f)
 
 /**
- * Wraps the app in [HaloTheme] with debug-controllable motion, plus a floating glass dock:
+ * Wraps the app in [HaloApp] with debug-controllable motion, plus a floating glass dock:
  * grid overlay (4/8dp), slow-mo (1–10×), reduced-motion simulation and an on-screen haptic log.
- * [dark] picks the palette (the app passes the stored appearance so switches are immediate).
+ * [appearance] is the app's appearance choice (the dock sits inside the theme transition, so a switch is seamless).
  */
 @Composable
 fun ShowroomDebugHost(
-    dark: Boolean = isSystemInDarkTheme(),
+    appearance: HaloAppearance,
     content: @Composable () -> Unit,
 ) {
     val state = remember { ShowroomDebugState() }
@@ -94,39 +92,31 @@ fun ShowroomDebugHost(
     val motion = remember(state.slowMo, state.reducedMotion, system) {
         HaloMotion(scale = state.slowMo, reduced = state.reducedMotion || system.reduced)
     }
-    val colors = remember(dark) { if (dark) haloDarkColors() else haloLightColors() }
-    HaloTheme(colors = colors, motion = motion, hapticObserver = state::log) {
+    HaloApp(appearance = appearance, motion = motion, hapticObserver = state::log) {
         val backdrop = rememberHaloBackdrop()
-        // Everything visible (content + dock + overlays) sits inside the reveal so a theme switch is seamless.
-        HaloThemeRevealHost(isDark = HaloTheme.colors.isDark, modifier = Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize()) {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(HaloTheme.colors.bg.canvas),
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .backdropSource(backdrop),
-                ) { content() }
-                state.gridStep?.let { GridOverlay(it) }
-                // Just above the dock that controls it: never over a page's header or the control being tested.
-                HapticLog(
-                    state,
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = HaloTheme.spacing.lg + DockHeight + HaloTheme.spacing.sm),
-                )
-                Dock(
-                    state = state,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = HaloTheme.spacing.lg),
-                    backdrop = backdrop,
-                )
-            }
+                    .backdropSource(backdrop),
+            ) { content() }
+            state.gridStep?.let { GridOverlay(it) }
+            // Just above the dock that controls it: never over a page's header or the control being tested.
+            HapticLog(
+                state,
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = HaloTheme.spacing.lg + DockHeight + HaloTheme.spacing.sm),
+            )
+            Dock(
+                state = state,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = HaloTheme.spacing.lg),
+                backdrop = backdrop,
+            )
         }
     }
 }

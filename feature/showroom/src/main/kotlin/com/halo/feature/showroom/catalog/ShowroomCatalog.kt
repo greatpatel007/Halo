@@ -1,6 +1,7 @@
 package com.halo.feature.showroom.catalog
 
 import androidx.compose.runtime.Composable
+import com.halo.feature.showroom.pages.BrandPage
 import com.halo.feature.showroom.pages.ColorPage
 import com.halo.feature.showroom.pages.DepthPage
 import com.halo.feature.showroom.pages.HapticsPage
@@ -34,6 +35,7 @@ class ShowroomPage(
 
 object ShowroomCatalog {
     val pages: List<ShowroomPage> = listOf(
+        ShowroomPage("brand", "Brand", "One seed colour re-brands everything · plug-in proof", ShowroomSection.Foundations) { BrandPage() },
         ShowroomPage("color", "Color", "Ink, volt, bitcoin, status — roles & contrast", ShowroomSection.Foundations) { ColorPage() },
         ShowroomPage("type", "Typography", "Satoshi × Paper Mono, 13 styles", ShowroomSection.Foundations) { TypePage() },
         ShowroomPage("spacing", "Space & shape", "4dp grid, radii, strokes", ShowroomSection.Foundations) { SpacingPage() },

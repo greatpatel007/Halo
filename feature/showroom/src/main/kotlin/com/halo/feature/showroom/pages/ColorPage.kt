@@ -18,18 +18,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import com.halo.core.designsystem.foundation.HaloText
 import com.halo.core.designsystem.foundation.enterRise
 import com.halo.core.designsystem.theme.HaloAccentColors
 import com.halo.core.designsystem.theme.HaloPalette
 import com.halo.core.designsystem.theme.HaloTheme
+import com.halo.core.designsystem.theme.contrast
 import com.halo.feature.showroom.ui.SectionLabel
 import com.halo.feature.showroom.ui.ShowroomCard
 import java.util.Locale
 
-private class Swatch(val name: String, val color: Color, val showContrast: Boolean = false)
+internal class Swatch(val name: String, val color: Color, val showContrast: Boolean = false)
 
 @Composable
 internal fun ColorPage() {
@@ -76,14 +76,14 @@ internal fun ColorPage() {
     Ramp("btc", listOf(HaloPalette.Btc900, HaloPalette.Btc600, HaloPalette.Btc500, HaloPalette.Btc400, HaloPalette.Btc300), Modifier.enterRise(index))
 }
 
-private fun accentSwatches(prefix: String, a: HaloAccentColors) = listOf(
+internal fun accentSwatches(prefix: String, a: HaloAccentColors) = listOf(
     Swatch("$prefix.fill", a.fill), Swatch("$prefix.fillPressed", a.fillPressed),
     Swatch("$prefix.onFill", a.onFill), Swatch("$prefix.text", a.text, true),
     Swatch("$prefix.tint", a.tint), Swatch("$prefix.glow", a.glow),
 )
 
 @Composable
-private fun SwatchRow(swatch: Swatch, canvas: Color) {
+internal fun SwatchRow(swatch: Swatch, canvas: Color) {
     val spacing = HaloTheme.spacing
     val chipShape = RoundedCornerShape(HaloTheme.radius.xs)
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -154,11 +154,4 @@ private fun hex(color: Color): String {
     val rgb = String.format(Locale.US, "#%06X", argb and 0xFFFFFF)
     val alpha = (color.alpha * 100).toInt()
     return if (alpha < 100) "$rgb · $alpha%" else rgb
-}
-
-/** WCAG 2.x contrast ratio. */
-private fun contrast(a: Color, b: Color): Float {
-    val l1 = a.luminance()
-    val l2 = b.luminance()
-    return (maxOf(l1, l2) + 0.05f) / (minOf(l1, l2) + 0.05f)
 }

@@ -18,29 +18,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.halo.core.designsystem.host.HaloThemeMode
+import com.halo.core.designsystem.host.HaloThemeSwitch
+import com.halo.core.designsystem.host.LocalHaloAppearance
 import com.halo.core.designsystem.component.HaloToggle
 import com.halo.core.designsystem.component.HaloToggleSize
 import com.halo.core.designsystem.component.HaloToggleTone
 import com.halo.core.designsystem.foundation.HaloText
 import com.halo.core.designsystem.foundation.enterRise
 import com.halo.core.designsystem.theme.HaloTheme
-import com.halo.core.model.ThemeMode
 import com.halo.feature.showroom.ui.ActionChip
-import com.halo.feature.showroom.ui.AppearanceSwitch
-import com.halo.feature.showroom.ui.AppearanceViewModel
 import com.halo.feature.showroom.ui.Knob
 import com.halo.feature.showroom.ui.SectionLabel
 import com.halo.feature.showroom.ui.ShowroomCard
 import com.halo.feature.showroom.ui.SpecLine
 
 @Composable
-internal fun TogglePage(appearance: AppearanceViewModel = hiltViewModel()) {
+internal fun TogglePage() {
+    val appearance = checkNotNull(LocalHaloAppearance.current)
     val s = HaloTheme.spacing
     val t = HaloTheme.typography
     val colors = HaloTheme.colors
-    val mode by appearance.themeMode.collectAsStateWithLifecycle()
+    val mode = appearance.mode
 
     // ---- 0. The real thing: the app's appearance switch.
     SectionLabel("Appearance · this switch themes the app", Modifier.enterRise(0))
@@ -56,12 +55,12 @@ internal fun TogglePage(appearance: AppearanceViewModel = hiltViewModel()) {
                 )
             }
             Spacer(Modifier.width(s.md))
-            AppearanceSwitch(viewModel = appearance)
+            HaloThemeSwitch()
         }
         Spacer(Modifier.height(s.lg))
         Row(verticalAlignment = Alignment.CenterVertically) {
             HaloText("mode ${mode.name.lowercase()}", style = t.data, color = colors.content.tertiary, modifier = Modifier.weight(1f))
-            ActionChip("follow system", { appearance.setThemeMode(ThemeMode.System) })
+            ActionChip("follow system", { appearance.setMode(HaloThemeMode.System) })
         }
     }
 

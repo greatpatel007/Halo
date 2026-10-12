@@ -8,10 +8,12 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.halo.core.designsystem.host.HaloThemeMode
+import com.halo.core.designsystem.host.rememberHaloAppearance
+import com.halo.core.model.ThemeMode
 import com.halo.feature.showroom.debug.ShowroomDebugCommands
 import com.halo.feature.showroom.debug.ShowroomDebugHost
 import com.halo.wallet.navigation.HaloNavHost
@@ -32,14 +34,15 @@ class MainActivity : ComponentActivity() {
         }
         forwardParams(intent)
         // Transparent bars once. The theme switches in place (configChanges="uiMode"), and the bar icons follow
-        // it from HaloThemeRevealHost, which flips them only when the tide washes over each bar.
+        // it from HaloApp's theme transition, which flips them only when the tide washes over each bar.
         val style = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
         enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
         setContent {
-            // Follow the stored choice immediately, so a theme switch (and its tide) responds on the next frame
-            // instead of waiting for the platform's uiMode configuration change.
-            val override by viewModel.darkOverride.collectAsStateWithLifecycle()
-            ShowroomDebugHost(dark = override ?: isSystemInDarkTheme()) {
+            // The stored choice drives the theme; a switch shows on the next frame (response first) and its Tide
+            // runs before the platform's uiMode configuration change lands.
+            val mode by viewModel.themeMode.collectAsStateWithLifecycle()
+            val appearance = rememberHaloAppearance(mode.toHalo()) { viewModel.setThemeMode(it.toModel()) }
+            ShowroomDebugHost(appearance) {
                 HaloNavHost()
             }
         }
@@ -59,4 +62,16 @@ class MainActivity : ComponentActivity() {
         uri.getQueryParameter("theme")?.let(viewModel::applyThemeParam)
         ShowroomDebugCommands.submit(uri.queryParameterNames.associateWith { uri.getQueryParameter(it).orEmpty() })
     }
+}
+
+private fun ThemeMode.toHalo() = when (this) {
+    ThemeMode.System -> HaloThemeMode.System
+    ThemeMode.Light -> HaloThemeMode.Light
+    ThemeMode.Dark -> HaloThemeMode.Dark
+}
+
+private fun HaloThemeMode.toModel() = when (this) {
+    HaloThemeMode.System -> ThemeMode.System
+    HaloThemeMode.Light -> ThemeMode.Light
+    HaloThemeMode.Dark -> ThemeMode.Dark
 }

@@ -92,18 +92,21 @@ class HaloTypography(
     val micro: TextStyle,
 )
 
-fun haloTypography(): HaloTypography = HaloTypography(
-    amountHero = style(PaperMono, FontWeight.Light, 48, 52, -0.03f),
-    amountLarge = style(PaperMono, FontWeight.Normal, 32, 38, -0.02f),
-    amountMedium = style(PaperMono, FontWeight.Normal, 20, 24, -0.01f),
-    amountSmall = style(PaperMono, FontWeight.Medium, 15, 20),
-    headline = style(Satoshi, FontWeight.Bold, 26, 32, -0.02f),
-    title = style(Satoshi, FontWeight.Bold, 20, 26, -0.01f),
-    subtitle = style(Satoshi, FontWeight.Medium, 17, 22, -0.005f),
-    body = style(Satoshi, FontWeight.Normal, 15, 22),
-    bodySmall = style(Satoshi, FontWeight.Normal, 13, 18),
-    label = style(Satoshi, FontWeight.Bold, 15, 20),
-    overline = style(PaperMono, FontWeight.Medium, 11, 14, 0.08f),
-    data = style(PaperMono, FontWeight.Normal, 13, 18),
-    micro = style(PaperMono, FontWeight.SemiBold, 10, 12, 0.06f),
-)
+/** The type scale set in [fonts] (Halo's own by default). */
+fun haloTypography(fonts: HaloFonts = HaloFonts.Halo): HaloTypography = with(fonts) {
+    HaloTypography(
+        amountHero = style(mono, FontWeight.Light, 48, 52, -0.03f),
+        amountLarge = style(mono, FontWeight.Normal, 32, 38, -0.02f),
+        amountMedium = style(mono, FontWeight.Normal, 20, 24, -0.01f),
+        amountSmall = style(mono, FontWeight.Medium, 15, 20),
+        headline = style(sans, FontWeight.Bold, 26, 32, -0.02f),
+        title = style(sans, FontWeight.Bold, 20, 26, -0.01f),
+        subtitle = style(sans, FontWeight.Medium, 17, 22, -0.005f),
+        body = style(sans, FontWeight.Normal, 15, 22),
+        bodySmall = style(sans, FontWeight.Normal, 13, 18),
+        label = style(sans, FontWeight.Bold, 15, 20),
+        overline = style(mono, FontWeight.Medium, 11, 14, 0.08f),
+        data = style(mono, FontWeight.Normal, 13, 18),
+        micro = style(mono, FontWeight.SemiBold, 10, 12, 0.06f),
+    )
+}

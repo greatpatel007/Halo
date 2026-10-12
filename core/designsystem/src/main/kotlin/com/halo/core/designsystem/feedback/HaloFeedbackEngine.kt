@@ -6,6 +6,7 @@ import android.view.View
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.edit
 import com.halo.core.designsystem.runtime.HaloPolicy
 import com.halo.core.designsystem.theme.HaloHaptic
 
@@ -23,18 +24,35 @@ internal class HaloFeedbackEngine private constructor(context: Context) {
     /** Measured audio output latency (ms), −1 until measured. */
     val audioLatencyMs: Float get() = sound.outputLatencyMs
 
+    /** The user's settings below survive restarts (a few bytes, written off the main thread by `apply`). */
+    private val settings = context.getSharedPreferences(SETTINGS, Context.MODE_PRIVATE)
+
     /** In-app switches (the system settings apply on top of these). */
-    var hapticsEnabled by mutableStateOf(true)
-    var soundEnabled by mutableStateOf(true)
+    var hapticsEnabled: Boolean
+        get() = hapticsState
+        set(value) {
+            hapticsState = value
+            settings.edit { putBoolean(KEY_HAPTICS, value) }
+        }
+    private var hapticsState by mutableStateOf(settings.getBoolean(KEY_HAPTICS, true))
+
+    var soundEnabled: Boolean
+        get() = soundState
+        set(value) {
+            soundState = value
+            settings.edit { putBoolean(KEY_SOUND, value) }
+        }
+    private var soundState by mutableStateOf(settings.getBoolean(KEY_SOUND, true))
 
     /** Per-phone haptic strength (0.5 … 1.5); 1 = as authored. */
     var hapticStrength: Float
         get() = strengthState
         set(value) {
-            strengthState = value.coerceIn(0.5f, 1.5f)
+            strengthState = value.coerceIn(MIN_STRENGTH, MAX_STRENGTH)
             haptics.strength = strengthState
+            settings.edit { putFloat(KEY_STRENGTH, strengthState) }
         }
-    private var strengthState by mutableStateOf(1f)
+    private var strengthState by mutableStateOf(settings.getFloat(KEY_STRENGTH, 1f).coerceIn(MIN_STRENGTH, MAX_STRENGTH))
 
     /** Battery saver or heat: long decorative feedback (the Tide's rush and water) shrinks to its launch. */
     @Volatile private var conserving = false
@@ -51,6 +69,7 @@ internal class HaloFeedbackEngine private constructor(context: Context) {
     }
 
     init {
+        haptics.strength = strengthState
         sound.prepare(HaloHaptic.entries.mapNotNull { Patterns.of(it).sound } + (0..10).mapNotNull { Patterns.tick(it / 10f).sound })
     }
 
@@ -111,6 +130,13 @@ internal class HaloFeedbackEngine private constructor(context: Context) {
     }
 
     companion object {
+        private const val SETTINGS = "halo_feedback"
+        private const val KEY_HAPTICS = "haptics"
+        private const val KEY_SOUND = "sound"
+        private const val KEY_STRENGTH = "strength"
+        private const val MIN_STRENGTH = 0.5f
+        private const val MAX_STRENGTH = 1.5f
+
         /** Typical time from vibrate() to the actuator moving (ms). */
         private const val HAPTIC_LATENCY_MS = 15f
         /** Never hold a touch's haptic back longer than this, whatever the audio latency. */

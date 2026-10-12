@@ -74,17 +74,19 @@ object HaloTheme {
 }
 
 /**
- * Root of the Halo design system. Dark and light ship together (decision D1): [colors] defaults to the
- * configuration's night mode, which the app drives through the platform's per-app night mode so the splash,
- * system bars and Compose always agree.
+ * Root of the Halo design system. Dark and light ship together (decision D1): [colors] defaults to the [brand]'s
+ * palette for the configuration's night mode. Apps usually start from `HaloApp`, which wraps this with the
+ * appearance choice and the theme transition.
  *
+ * @param brand the host app's palettes and fonts ([HaloBrand.Halo] or [haloBrand]).
  * @param light the scene light; null = the world-fixed key light, which turns as the phone turns (decision D6).
  * @param motion defaults to the system: "Remove animations" (animator scale 0) switches to reduced motion.
  * @param hapticObserver sees every haptic token played (Showroom haptic log).
  */
 @Composable
 fun HaloTheme(
-    colors: HaloColors = rememberSystemHaloColors(),
+    brand: HaloBrand = HaloBrand.Halo,
+    colors: HaloColors = brand.colors(isSystemInDarkTheme()),
     light: HaloLight? = null,
     effects: HaloEffects = remember(colors.isDark) { haloEffects(colors.isDark) },
     materials: HaloMaterials = remember(colors.isDark) { haloMaterials(colors.isDark) },
@@ -92,7 +94,7 @@ fun HaloTheme(
     hapticObserver: ((HaloHaptic, Float) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    val typography = remember { haloTypography() }
+    val typography = remember(brand.fonts) { haloTypography(brand.fonts) }
     val runtime = rememberHaloRuntime(reducedMotion = motion.reduced, timeScale = motion.scale)
     val haptics = rememberHaloHaptics(hapticObserver, runtime)
     val hdr = runtime.scene.hdr
@@ -118,13 +120,6 @@ fun HaloTheme(
         LocalTextSelectionColors provides selection,
         content = content,
     )
-}
-
-/** Dark or light palette from the current configuration (the app sets the per-app night mode). */
-@Composable
-fun rememberSystemHaloColors(): HaloColors {
-    val dark = isSystemInDarkTheme()
-    return remember(dark) { if (dark) haloDarkColors() else haloLightColors() }
 }
 
 @Composable
