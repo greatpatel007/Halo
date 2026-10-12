@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import com.halo.feature.showroom.pages.BrandPage
 import com.halo.feature.showroom.pages.ColorPage
 import com.halo.feature.showroom.pages.DepthPage
+import com.halo.feature.showroom.pages.SurfacePage
 import com.halo.feature.showroom.pages.HapticsPage
 import com.halo.feature.showroom.pages.IconsPage
 import com.halo.feature.showroom.pages.RuntimePage
@@ -42,6 +43,7 @@ object ShowroomCatalog {
         ShowroomPage("type", "Typography", "Satoshi × Paper Mono, 13 styles", ShowroomSection.Foundations) { TypePage() },
         ShowroomPage("spacing", "Space & shape", "4dp grid, radii, strokes", ShowroomSection.Foundations) { SpacingPage() },
         ShowroomPage("depth", "Depth & light", "Surfaces, glass, glow, grain", ShowroomSection.Foundations) { DepthPage() },
+        ShowroomPage("surface", "Surface lab", "Proof · clean glass on a matte base · light as information", ShowroomSection.Foundations) { SurfacePage() },
         ShowroomPage("motion", "Motion", "Spring tokens, curves, choreography", ShowroomSection.Foundations) { MotionPage() },
         ShowroomPage("haptics", "Haptics", "Haptics & sound lab · tiers per phone", ShowroomSection.Foundations) { HapticsPage() },
         ShowroomPage("icons", "Icons", "24dp grid, 1.75 stroke", ShowroomSection.Foundations) { IconsPage() },

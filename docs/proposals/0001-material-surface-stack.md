@@ -1,6 +1,6 @@
 # Proposal 0001: Halo Material, a layered surface stack with scene lighting
 
-**Status:** **Accepted** (2026-10-09; decisions below) · **Raised by:** product direction, "surfaces need
+**Status:** **Accepted** (2026-10-09; decisions below). The *surface* half is superseded by [0005 clean glass](0005-clean-glass.md) (draft, 2026-10-12); D1, D3–D6 and D8 stand · **Raised by:** product direction, "surfaces need
 texture and lighting (close to ray-traced) for a real-world look. Texture should be its own layer so the surface
 can animate without animating the element."
 
