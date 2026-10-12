@@ -7,7 +7,7 @@ import com.halo.core.designsystem.theme.HaloTheme
 
 /**
  * The network a payment UI represents (decision D8): colour carries meaning — on-chain is Bitcoin orange,
- * Lightning is electric cyan. A presentation enum: features map their domain network onto it.
+ * Lightning is brand yellow. A presentation enum: features map their domain network onto it.
  */
 enum class HaloPaymentNetwork { Onchain, Lightning }
 

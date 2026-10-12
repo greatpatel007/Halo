@@ -8,18 +8,18 @@ import androidx.compose.ui.graphics.Color
  * The only file allowed to declare raw color literals is this one.
  */
 object HaloPalette {
-    // Ink — dark theme neutrals (soft-touch black).
-    val Ink950 = Color(0xFF0A0A0B)
-    val Ink900 = Color(0xFF101012)
-    val Ink850 = Color(0xFF141416)
-    val Ink800 = Color(0xFF1A1A1D)
-    val Ink700 = Color(0xFF232327)
-    val Ink600 = Color(0xFF2E2E34)
-    val Ink500 = Color(0xFF46464D)
-    val Ink400 = Color(0xFF6E6E76)
-    val Ink300 = Color(0xFF9C9CA3)
-    val Ink200 = Color(0xFFCFCFD2)
-    val Ink100 = Color(0xFFF4F4F2)
+    // Ink — dark theme neutrals (soft-touch black), with a faint cast of the brand blue (OKLCH hue 264).
+    val Ink950 = Color(0xFF090A0C)
+    val Ink900 = Color(0xFF0E0F12)
+    val Ink850 = Color(0xFF131417)
+    val Ink800 = Color(0xFF181A1D)
+    val Ink700 = Color(0xFF212327)
+    val Ink600 = Color(0xFF2B2E32)
+    val Ink500 = Color(0xFF45484D)
+    val Ink400 = Color(0xFF6F737A)
+    val Ink300 = Color(0xFF999DA5)
+    val Ink200 = Color(0xFFCDCFD5)
+    val Ink100 = Color(0xFFF3F4F7)
 
     // Ceramic — light theme neutrals (cool matte white, as in the toggle reference).
     val Ceramic000 = Color(0xFFFFFFFF)
@@ -37,51 +37,53 @@ object HaloPalette {
     /** Cool shadow tone of the light theme (shadows on ceramic are blue-grey, never black). */
     val Slate900Shadow = Color(0xFF2B3A52)
 
-    // Volt — the UI accent.
-    val Volt300 = Color(0xFFE6FF8A)
-    val Volt400 = Color(0xFFDCFF5E)
-    val Volt500 = Color(0xFFD4FF3A)
-    val Volt550 = Color(0xFFC6F432)
-    val Volt600 = Color(0xFFB6DD22)
-    val Volt650 = Color(0xFFB4E21D)
-    val Volt800 = Color(0xFF4D6600)
-    val Volt850 = Color(0xFF5B7A00)
-    val Volt900 = Color(0xFF1C2209)
-    val Volt050 = Color(0xFFEEF9CC)
+    // Blue — the UI accent (brand primary #2A67FF). Text stops reach 4.5:1 on each theme's canvas.
+    val Blue400 = Color(0xFF6E9BFF)
+    val Blue500 = Color(0xFF2A67FF)
+    val Blue600 = Color(0xFF1F55E0)
+    val Blue700 = Color(0xFF1A4CD1)
+    /** The brand navy: the accent's tint on soft-touch black. */
+    val Blue900 = Color(0xFF0D1A3C)
+    val Blue050 = Color(0xFFE3ECFF)
+
+    // Colour hierarchy (OKLCH chroma): brand blue is the one loud colour (0.24). Network families sit below it
+    // (~0.14) and status colours below those (0.10–0.15), so nothing out-shouts the brand.
 
     // Bitcoin — on-chain only.
-    val Btc300 = Color(0xFFFFB977)
-    val Btc400 = Color(0xFFFFA04A)
-    val Btc500 = Color(0xFFFF8A1F)
-    val Btc550 = Color(0xFFEE7A0E)
-    val Btc600 = Color(0xFFE0700A)
-    val Btc800 = Color(0xFFB4500A)
-    val Btc900 = Color(0xFF2B1707)
-    val Btc050 = Color(0xFFFFEBD8)
+    val Btc300 = Color(0xFFF9C696)
+    val Btc400 = Color(0xFFF3AD6D)
+    val Btc500 = Color(0xFFED9449)
+    val Btc550 = Color(0xFFE28842)
+    val Btc600 = Color(0xFFD77F3D)
+    val Btc800 = Color(0xFFA2511A)
+    val Btc900 = Color(0xFF321B0B)
+    val Btc050 = Color(0xFFFEEBDB)
 
-    // Lightning — electric cyan, Lightning only.
-    val Cyan300 = Color(0xFF7AE8FF)
-    val Cyan500 = Color(0xFF2EDBFF)
-    val Cyan550 = Color(0xFF12C2E8)
-    val Cyan600 = Color(0xFF00B8E6)
-    val Cyan650 = Color(0xFF00A3CC)
-    val Cyan800 = Color(0xFF00708C)
-    val Cyan900 = Color(0xFF072530)
-    val Cyan050 = Color(0xFFD9F6FF)
+    // Lightning — yellow, Lightning only. The UI uses a softened yellow at the network families' chroma (~0.13, like
+    // orange); the exact brand yellow is kept for brand moments, where it may be loud.
+    val YellowBrand = Color(0xFFF5DE4B)
+    val Yellow400 = Color(0xFFE5D587)
+    val Yellow500 = Color(0xFFE6D06A)
+    val Yellow550 = Color(0xFFD3BA59)
+    val Yellow600 = Color(0xFFCDB352)
+    val Yellow800 = Color(0xFF665800)
+    val Yellow900 = Color(0xFF262107)
+    val Yellow050 = Color(0xFFFFF8D6)
 
     // Status.
-    val Green500 = Color(0xFF3DDC97)
-    val Green700 = Color(0xFF0B7A4F)
-    val Green900 = Color(0xFF0F2A1F)
-    val Green050 = Color(0xFFDDF5EA)
-    val Red500 = Color(0xFFFF5A5F)
-    val Red700 = Color(0xFFC42D33)
-    val Red900 = Color(0xFF2E1213)
-    val Red050 = Color(0xFFFCE3E4)
-    val Amber500 = Color(0xFFFFC857)
-    val Amber700 = Color(0xFF8A5C00)
-    val Amber900 = Color(0xFF2C2410)
-    val Amber050 = Color(0xFFFFF1D1)
+    val Green500 = Color(0xFF6ECF9A)
+    val Green700 = Color(0xFF25764E)
+    val Green900 = Color(0xFF0F271A)
+    val Green050 = Color(0xFFDFF5E7)
+    val Red500 = Color(0xFFED7473)
+    val Red700 = Color(0xFFB63638)
+    val Red900 = Color(0xFF361717)
+    val Red050 = Color(0xFFFFE8E7)
+    // Warning is coral, kept apart from Lightning's yellow and Bitcoin's orange.
+    val Coral500 = Color(0xFFF2AA8C)
+    val Coral700 = Color(0xFFA25235)
+    val Coral900 = Color(0xFF321E16)
+    val Coral050 = Color(0xFFFFECE3)
 
     val White = Color(0xFFFFFFFF)
     val Black = Color(0xFF000000)
@@ -121,7 +123,7 @@ class HaloLineColors(
     val highlight: Color,
 )
 
-/** An accent family: lime (UI), Bitcoin orange (on-chain) or Lightning cyan. */
+/** An accent family: blue (UI), Bitcoin orange (on-chain) or Lightning yellow. */
 @Immutable
 class HaloAccentColors(
     val fill: Color,
@@ -150,11 +152,11 @@ class HaloColors(
     val bg: HaloBackgroundColors,
     val content: HaloContentColors,
     val line: HaloLineColors,
-    /** Electric lime — every interactive UI accent. */
+    /** Brand blue — every interactive UI accent. */
     val accent: HaloAccentColors,
     /** Bitcoin orange — on-chain Bitcoin only. */
     val bitcoin: HaloAccentColors,
-    /** Electric cyan — Lightning only. */
+    /** Yellow — Lightning only. */
     val lightning: HaloAccentColors,
     val status: HaloStatusColors,
     val isDark: Boolean,
@@ -197,16 +199,16 @@ fun haloDarkColors(): HaloColors = with(HaloPalette) {
             subtle = White.copy(alpha = 0.06f),
             default = White.copy(alpha = 0.10f),
             strong = White.copy(alpha = 0.16f),
-            focus = Volt500,
+            focus = Blue400,
             highlight = White.copy(alpha = 0.08f),
         ),
         accent = HaloAccentColors(
-            fill = Volt500,
-            fillPressed = Volt600,
-            onFill = Ink950,
-            text = Volt400,
-            tint = Volt900,
-            glow = Volt500.copy(alpha = 0.24f),
+            fill = Blue500,
+            fillPressed = Blue600,
+            onFill = White,
+            text = Blue400,
+            tint = Blue900,
+            glow = Blue500.copy(alpha = 0.30f),
         ),
         bitcoin = HaloAccentColors(
             fill = Btc500,
@@ -214,23 +216,23 @@ fun haloDarkColors(): HaloColors = with(HaloPalette) {
             onFill = Ink950,
             text = Btc400,
             tint = Btc900,
-            glow = Btc500.copy(alpha = 0.24f),
+            glow = Btc500.copy(alpha = 0.18f),
         ),
         lightning = HaloAccentColors(
-            fill = Cyan500,
-            fillPressed = Cyan550,
+            fill = Yellow500,
+            fillPressed = Yellow550,
             onFill = Ink950,
-            text = Cyan300,
-            tint = Cyan900,
-            glow = Cyan500.copy(alpha = 0.26f),
+            text = Yellow400,
+            tint = Yellow900,
+            glow = Yellow500.copy(alpha = 0.16f),
         ),
         status = HaloStatusColors(
             positive = Green500,
             positiveTint = Green900,
             negative = Red500,
             negativeTint = Red900,
-            warning = Amber500,
-            warningTint = Amber900,
+            warning = Coral500,
+            warningTint = Coral900,
         ),
         isDark = true,
     )
@@ -261,16 +263,16 @@ fun haloLightColors(): HaloColors = with(HaloPalette) {
             subtle = Slate950.copy(alpha = 0.06f),
             default = Slate950.copy(alpha = 0.10f),
             strong = Slate950.copy(alpha = 0.16f),
-            focus = Volt850,
+            focus = Blue600,
             highlight = White.copy(alpha = 0.90f),
         ),
         accent = HaloAccentColors(
-            fill = Volt550,
-            fillPressed = Volt650,
-            onFill = Slate950,
-            text = Volt800,
-            tint = Volt050,
-            glow = Volt550.copy(alpha = 0.30f),
+            fill = Blue500,
+            fillPressed = Blue600,
+            onFill = White,
+            text = Blue600,
+            tint = Blue050,
+            glow = Blue500.copy(alpha = 0.28f),
         ),
         bitcoin = HaloAccentColors(
             fill = Btc500,
@@ -278,23 +280,23 @@ fun haloLightColors(): HaloColors = with(HaloPalette) {
             onFill = Slate950,
             text = Btc800,
             tint = Btc050,
-            glow = Btc500.copy(alpha = 0.30f),
+            glow = Btc500.copy(alpha = 0.22f),
         ),
         lightning = HaloAccentColors(
-            fill = Cyan600,
-            fillPressed = Cyan650,
+            fill = Yellow500,
+            fillPressed = Yellow600,
             onFill = Slate950,
-            text = Cyan800,
-            tint = Cyan050,
-            glow = Cyan600.copy(alpha = 0.30f),
+            text = Yellow800,
+            tint = Yellow050,
+            glow = Yellow550.copy(alpha = 0.26f),
         ),
         status = HaloStatusColors(
             positive = Green700,
             positiveTint = Green050,
             negative = Red700,
             negativeTint = Red050,
-            warning = Amber700,
-            warningTint = Amber050,
+            warning = Coral700,
+            warningTint = Coral050,
         ),
         isDark = false,
     )

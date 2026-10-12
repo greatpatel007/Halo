@@ -20,7 +20,7 @@
 - **Don't use for:**
   - choices that need confirmation (use a button)
   - one of several options (segmented control)
-- **Tones:** Accent (lime) for settings; Bitcoin for on-chain settings; Lightning for Lightning settings.
+- **Tones:** Accent (blue) for settings; Bitcoin for on-chain settings; Lightning for Lightning settings.
 
 ## 2. Anatomy
 All proportions are of housing height H, taken from the reference frame.

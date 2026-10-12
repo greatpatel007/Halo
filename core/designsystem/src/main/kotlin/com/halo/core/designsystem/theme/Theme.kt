@@ -36,7 +36,7 @@ val LocalHaloHaptics = staticCompositionLocalOf<HaloHaptics> {
     error("HaloHaptics not provided — wrap content in HaloTheme { }")
 }
 
-/** Color that text and icons inherit from their container (e.g. onFill inside a lime button). */
+/** Color that text and icons inherit from their container (e.g. onFill inside a blue button). */
 val LocalHaloContentColor = compositionLocalOf { Color.Unspecified }
 
 /** Token accessor: `HaloTheme.colors.accent.fill`, `HaloTheme.motion.spring(HaloSpring.Snap)`, ... */

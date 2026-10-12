@@ -13,6 +13,7 @@ import com.halo.feature.showroom.pages.TypePage
 import com.halo.feature.showroom.pages.components.ButtonPage
 import com.halo.feature.showroom.pages.components.HoldToSendPage
 import com.halo.feature.showroom.pages.components.LogoPage
+import com.halo.feature.showroom.pages.components.SheetPage
 import com.halo.feature.showroom.pages.components.RollingAmountPage
 import com.halo.feature.showroom.pages.components.TogglePage
 
@@ -36,7 +37,7 @@ class ShowroomPage(
 object ShowroomCatalog {
     val pages: List<ShowroomPage> = listOf(
         ShowroomPage("brand", "Brand", "One seed colour re-brands everything · plug-in proof", ShowroomSection.Foundations) { BrandPage() },
-        ShowroomPage("color", "Color", "Ink, volt, bitcoin, status — roles & contrast", ShowroomSection.Foundations) { ColorPage() },
+        ShowroomPage("color", "Color", "Ink, blue, bitcoin, lightning, status — roles & contrast", ShowroomSection.Foundations) { ColorPage() },
         ShowroomPage("type", "Typography", "Satoshi × Paper Mono, 13 styles", ShowroomSection.Foundations) { TypePage() },
         ShowroomPage("spacing", "Space & shape", "4dp grid, radii, strokes", ShowroomSection.Foundations) { SpacingPage() },
         ShowroomPage("depth", "Depth & light", "Surfaces, glass, glow, grain", ShowroomSection.Foundations) { DepthPage() },
@@ -49,6 +50,7 @@ object ShowroomCatalog {
         ShowroomPage("rolling-amount", "Rolling amount", "Odometer digits · sats / BTC / fiat · privacy", ShowroomSection.Components) { RollingAmountPage() },
         ShowroomPage("hold-to-send", "Hold to send", "Charge · lock · check · spark burst", ShowroomSection.Components) { HoldToSendPage() },
         ShowroomPage("toggle", "Toggle", "Ceramic / graphite switch · the theme switch", ShowroomSection.Components) { TogglePage() },
+        ShowroomPage("sheet", "Sheet", "Tray that is thrown, carried and lands · morphs between steps", ShowroomSection.Components) { SheetPage() },
         ShowroomPage("logo", "Logo", "Glass halo · radium liquid · real fluid physics", ShowroomSection.Components) { LogoPage() },
     )
 

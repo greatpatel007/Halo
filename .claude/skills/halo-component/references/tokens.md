@@ -19,17 +19,22 @@ Dark-first. Components reference **roles only**, never `HaloPalette`.
 | `content.disabled` | ink500 | disabled labels |
 | `content.inverse` | ink950 | text on light fills |
 | `line.subtle / default / strong` | white 6 / 10 / 16% | L1 / L2 / L3 edges, dividers |
-| `line.focus` | volt500 | keyboard focus ring |
+| `line.focus` | blue400 (dark) / blue600 (light) | keyboard focus ring |
 | `line.highlight` | white 8% | top-edge light catch (L2+) |
-| `accent.fill / fillPressed / onFill` | volt500 / volt600 / ink950 | primary actions (lime) |
-| `accent.text` | volt400 | lime text/icons on dark |
-| `accent.tint` | volt900 | selected chip/row background |
-| `accent.glow` | volt500 @24% | glow behind active accent |
-| `bitcoin.*` | same shape on btc ramp (`#FF8A1F`) | **Bitcoin & Lightning meaning only** |
-| `status.positive / negative / warning` (+ `Tint`) | `#3DDC97` / `#FF5A5F` / `#FFC857` | incoming, errors, cautions |
+| `accent.fill / fillPressed / onFill` | blue500 `#2A67FF` / blue600 / white | primary actions (brand blue; white label 4.7:1) |
+| `accent.text` | blue400 `#6E9BFF` (dark, 7.3:1) / blue600 (light, 5.3:1) | blue text/icons |
+| `accent.tint` | blue900 `#0D1A3C` brand navy / blue050 | selected chip/row background |
+| `accent.glow` | blue500 @30% (dark) / @28% (light) | glow behind active accent |
+| `bitcoin.*` | same shape on the calmed btc ramp (`#ED9449`, OKLCH C 0.14) | **on-chain Bitcoin only** |
+| `lightning.*` | same shape on the softened yellow ramp (`#E6D06A`, C 0.13; ink label; text yellow800 on light). Exact brand yellow `#F5DE4B` = `HaloPalette.YellowBrand`, brand moments only | **Lightning only** |
+| `status.positive / negative / warning` (+ `Tint`) | `#6ECF9A` / `#ED7473` / coral `#F2AA8C` (dark; deeper stops on light) | incoming, errors, cautions (warning is coral, never yellow) |
+
+**Colour hierarchy (OKLCH chroma):** brand blue `#2A67FF` is the only loud colour (C 0.24). Network families sit at ~0.14,
+status colours at 0.10–0.15, and the ink neutrals carry a faint blue cast (hue 264, C ≤ 0.012). A new colour must sit in
+this hierarchy: nothing may out-shout the brand blue.
 
 `LocalHaloContentColor` carries the container's content color down the tree. `HaloText` and `HaloIcon` default to it,
-so text in a lime button automatically becomes `accent.onFill`.
+so text in a blue button automatically becomes `accent.onFill`.
 
 ## Typography (`HaloTheme.typography`)
 Every style trims its line box (`LineHeightStyle.Trim.Both`), so a text node is exactly its line height.
@@ -67,6 +72,7 @@ Rules:
   - icons: `iconSm 16`, `iconMd 20`, `iconLg 24`, `iconXl 32`
   - switch housings: `switchMd 80×30`, `switchLg 112×42`
   - glass halo mark: `logoMd 32`, `logoLg 56`
+  - sheet grip: `sheetHandle 36×4`
 - **`radius`:**
   - `xs 8`, `sm 12`, `md 16`, `lg 20`, `xl 28`, `sheet 32`
   - `full` (a 50% shape)
@@ -107,6 +113,7 @@ Components pick a material role, never their own albedo, gloss or grain.
 | `Digit` | 0.75 / 700 | odometer digit roll |
 | `Mechanical` | 1.0 / 400 | switch thumbs, sliders with mass (~330ms, never bounces) |
 | `Tide` | 1.0 / 7 | the theme transition's water front (launched with a kick) |
+| `Throw` | 0.82 / 440 | a surface thrown and carried by momentum (sheets after a fling); a placed surface uses `Gentle` |
 
 - **Calls:**
   - `motion.spring<T>(token, visibilityThreshold?)` for anything spatial.
@@ -132,6 +139,8 @@ Components pick a material role, never their own albedo, gloss or grain.
 | `Reject` | invalid (always paired with a shake) |
 | `Crescendo` | start of a hold-to-commit charge |
 | `Celebrate` | payment sent |
+| `Ping` | the glass halo struck lightly |
+| `Land` | a tray or sheet comes to rest (soft round knock) |
 
 Call `haptics.perform(token)`. Use `haptics.tick(intensity 0..1)` for charging progress and `haptics.cancel()` to abort a composition.
 

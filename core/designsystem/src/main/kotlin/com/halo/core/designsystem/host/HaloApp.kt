@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.halo.core.designsystem.foundation.HaloOverlayHost
 import com.halo.core.designsystem.foundation.HaloThemeRevealHost
 import com.halo.core.designsystem.theme.HaloBrand
 import com.halo.core.designsystem.theme.HaloHaptic
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.drop
  *   haptics and sound);
  * - the [appearance] choice, provided as [LocalHaloAppearance], and the Tide theme transition around the whole
  *   window, which also flips the system-bar icons as the wave crosses them;
+ * - the overlay layer, where sheets, dialogs and toasts render above everything (the screen behind recedes);
  * - edge-to-edge drawing ([edgeToEdge]) on the canvas colour;
  * - the platform's per-app night mode, kept in step with the choice so the splash screen and system dialogs match
  *   (only when the activity handles `uiMode` changes itself; otherwise a switch would restart it mid-wave).
@@ -63,7 +65,10 @@ fun HaloApp(
                     Modifier
                         .fillMaxSize()
                         .background(HaloTheme.colors.bg.canvas),
-                ) { content() }
+                ) {
+                    // Sheets, dialogs and toasts render in this layer, above the content and inside the Tide.
+                    HaloOverlayHost { content() }
+                }
             }
         }
     }

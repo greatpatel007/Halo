@@ -54,11 +54,11 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 enum class HaloToggleTone {
-    /** Lime — settings. */
+    /** Blue — settings. */
     Accent,
     /** Orange — on-chain Bitcoin settings. */
     Bitcoin,
-    /** Cyan — Lightning settings. */
+    /** Yellow — Lightning settings. */
     Lightning,
 }
 

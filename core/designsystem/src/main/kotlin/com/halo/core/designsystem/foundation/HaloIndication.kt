@@ -37,7 +37,7 @@ import kotlin.math.max
  * exact press point — but as a radial glow instead of a hard-edged wave. Also draws the keyboard /
  * D-pad focus ring (2dp, offset 2dp outside the shape).
  *
- * The highlight uses the container's content color, so it lightens dark surfaces and darkens lime fills.
+ * The highlight uses the container's content color, so it lightens dark surfaces and darkens light fills.
  */
 class HaloIndication(
     private val shape: Shape,

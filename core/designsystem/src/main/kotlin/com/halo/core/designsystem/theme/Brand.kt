@@ -28,7 +28,7 @@ class HaloBrand(
     fun colors(isDark: Boolean): HaloColors = if (isDark) dark else light
 
     companion object {
-        /** Halo's own brand: electric lime, Bitcoin orange, Lightning cyan, Satoshi and Paper Mono. */
+        /** Halo's own brand: blue #2A67FF, Bitcoin orange, Lightning yellow, Satoshi and Paper Mono. */
         val Halo: HaloBrand by lazy { HaloBrand(haloDarkColors(), haloLightColors()) }
     }
 }
@@ -50,7 +50,7 @@ class HaloFonts(val sans: FontFamily, val mono: FontFamily) {
  * accent text reaches 4.5:1 on the canvas and the label on a fill reaches 4.5:1 too, in both themes. Neutrals, lines
  * and status colours stay Halo's.
  *
- * @param accent every interactive UI accent (Halo: electric lime).
+ * @param accent every interactive UI accent (Halo: blue #2A67FF).
  * @param bitcoin the first signal family (Halo: on-chain Bitcoin). Null keeps Halo's.
  * @param lightning the second signal family (Halo: Lightning). Null keeps Halo's.
  */

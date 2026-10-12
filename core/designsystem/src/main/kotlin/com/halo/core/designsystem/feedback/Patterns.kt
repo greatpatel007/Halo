@@ -87,6 +87,16 @@ internal object Patterns {
         basic = null,
     )
 
+    /**
+     * A slab coming to rest: one soft, round tap (low sharpness) and a muted low knock, like a drawer closing on felt.
+     * Felt more than heard, so it never tires on a surface that settles often.
+     */
+    val Land = HaloPattern(
+        events = listOf(tap(0, 0.42f, 0.25f)),
+        sound = HaloSoundCue.Thud(pitchHz = 110f, repeats = 1, spacingMs = 0, gain = 0.12f),
+        basic = null,
+    )
+
     /** Reduced motion's theme change (a crossfade, no water): one soft, round tap and a short breath. */
     val ThemeFade = HaloPattern(
         events = listOf(tap(0, 0.35f, 0.3f)),
@@ -123,6 +133,7 @@ internal object Patterns {
         HaloHaptic.Crescendo -> Crescendo
         HaloHaptic.Celebrate -> Celebrate
         HaloHaptic.Ping -> Ping
+        HaloHaptic.Land -> Land
         // The Tide is played live from its trajectory (HaloHaptics.tide); as a plain token it is the launch.
         HaloHaptic.Tide -> TideLaunch
     }

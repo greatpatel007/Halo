@@ -58,7 +58,7 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 enum class HaloButtonVariant {
-    /** Lime fill + glow. One per view. */
+    /** Blue fill + glow. One per view. */
     Primary,
     /** Raised surface with a lit edge. */
     Secondary,
@@ -66,7 +66,7 @@ enum class HaloButtonVariant {
     Ghost,
     /** Orange fill + glow. On-chain Bitcoin actions only. */
     Bitcoin,
-    /** Cyan fill + glow. Lightning actions only. */
+    /** Yellow fill + glow. Lightning actions only. */
     Lightning,
 }
 

@@ -25,7 +25,7 @@ Screenshots from the Pixel 10 Pro emulator are 1280×2856 at 480 dpi, so **1dp =
 - [ ] Icons inside circles are optically centred (asymmetric glyphs like play or send may need a 0.5–1dp nudge;
       justify it with `// lint-ignore: dp-literal <reason>`).
 - [ ] Icon stroke matches the text weight next to it (1.75 at 24dp, scaled at 20dp).
-- [ ] Lime appears only on actionable or selected things. Orange appears only on Bitcoin/Lightning meaning.
+- [ ] Blue appears only on actionable or selected things. Orange appears only on Bitcoin/Lightning meaning.
 - [ ] Glow reads as light, not as a shadow or smudge: check the edges against `canvas`.
 
 ## Motion (review at 5× slow-mo)

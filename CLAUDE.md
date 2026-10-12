@@ -44,9 +44,10 @@ default location) by itself. Never put machine-specific paths in `gradle.propert
   composable wires it to a stateless `*Screen`. Navigation uses type-safe `@Serializable` routes.
 - Money is `Sats` (Long) / `BigDecimal` in the domain. Never use `Double` for amounts outside display formatting.
 - Colour carries meaning:
-  - **Lime** = UI actions
+  - **blue** (`#2A67FF`, brand primary) = UI actions
   - **orange** = on-chain Bitcoin
-  - **electric cyan** = Lightning
+  - **yellow** = Lightning (UI uses a softened `#E6D06A`; exact brand `#F5DE4B` only for brand moments); warnings are coral
+  - Hierarchy: brand blue is the one loud colour; network and status colours are calmer by design (OKLCH chroma, see tokens.md)
 
   Numbers are always Paper Mono.
 - **Dark and light themes ship together.** Every component and page is verified in both (decision D1).
@@ -59,7 +60,7 @@ default location) by itself. Never put machine-specific paths in `gradle.propert
   vibration/audio APIs). Continuous animation runs only while visible, foregrounded, outside battery saver and
   reduced motion. Physics and feedback models are unit-tested (`halo.py gradle :core:designsystem:testDebugUnitTest`).
 - Apps enter through `HaloApp(brand, appearance) { }` (proposal 0004): brand = palettes + fonts (`haloBrand(accent)`
-  derives roles in OKLCH with AA contrast); the appearance store belongs to the host. Never hard-code Halo's lime
+  derives roles in OKLCH with AA contrast); the appearance store belongs to the host. Never hard-code Halo's blue
   where a role (`colors.accent`) is meant: other apps re-brand it. Plug-in guide: `docs/INTEGRATION.md`.
 - minSdk 26: shaders only when `HaloPlatform.shaders` (Android 13+), blur when `HaloPlatform.blur` (12+), each with a
   designed canvas fallback; newer platform calls are gated by `SDK_INT` (Android Lint `NewApi` stays clean). Check

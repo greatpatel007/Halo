@@ -35,9 +35,9 @@ import java.util.Locale
 
 /** Example accents a host app might bring. Seeds are the dark theme's fill; everything else is derived. */
 private enum class Seed(val color: Color) {
-    Halo(Color(0xFFD4FF3A)),
+    Halo(Color(0xFF2A67FF)),
+    Lime(Color(0xFFD4FF3A)),
     Coral(Color(0xFFFF6B5A)),
-    Ocean(Color(0xFF3D7BFF)),
     Violet(Color(0xFF9B6BFF)),
     Mint(Color(0xFF3DDCB0)),
     Sun(Color(0xFFFFD23F)),
@@ -49,7 +49,7 @@ private enum class Seed(val color: Color) {
  */
 @Composable
 internal fun BrandPage() {
-    var seed by rememberSaveable { mutableStateOf(Seed.Ocean) }
+    var seed by rememberSaveable { mutableStateOf(Seed.Lime) }
     val brand = remember(seed) { haloBrand(accent = seed.color) }
     val colors = brand.colors(HaloTheme.colors.isDark)
 

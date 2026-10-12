@@ -16,7 +16,7 @@ These come from a frame-by-frame review of `Refs/` (ffmpeg contact sheets) and t
 | D5 | **Touch-reactive light** | On press, emission ramps up and the specular highlight moves toward the finger (`card.mp4`). |
 | D6 | **Device-tilt light + 3D parallax** | Tilting moves the light and gives hero cards a perspective tilt, with content layers at different depths (`3d graph immersive.mp4`). Sensor runs only while visible, at ~30 Hz, spring-smoothed. Off under reduced motion and power saver. |
 | D7 | **Pop-out depth for signature moments only** | Content may break the card plane (graph curves, an orb rising from a bar). At most 1–2 per screen. |
-| D8 | **Lightning gets electric cyan; on-chain Bitcoin stays orange; lime stays the UI accent** | Emission colour carries meaning: lime = act, orange = on-chain, cyan = Lightning. `HaloHoldToSend` and Bitcoin-variant controls take the network into account. |
+| D8 | **Lightning gets its own colour; on-chain Bitcoin stays orange; the accent is for actions** (revised 2026-10-12: brand blue `#2A67FF` replaces lime, brand yellow `#F5DE4B` replaces cyan, warning moves to coral) | Emission colour carries meaning: blue = act, orange = on-chain, yellow = Lightning. `HaloHoldToSend` and Bitcoin-variant controls take the network into account. |
 
 **Motion calibration** (measured from raw pixels; see [research 0001](../research/0001-reference-analysis.md)):
 - Toggle thumb ON: settles in ~0.33s, critically damped, no overshoot. The new token `Mechanical(1.0, 400)` fits;

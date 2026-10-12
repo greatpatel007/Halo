@@ -47,8 +47,9 @@ internal fun ColorPage() {
             Swatch("line.subtle", c.line.subtle), Swatch("line.default", c.line.default),
             Swatch("line.strong", c.line.strong), Swatch("line.focus", c.line.focus), Swatch("line.highlight", c.line.highlight),
         ),
-        "Accent · volt" to accentSwatches("accent", c.accent),
-        "Bitcoin · BTC & Lightning only" to accentSwatches("bitcoin", c.bitcoin),
+        "Accent · blue" to accentSwatches("accent", c.accent),
+        "Bitcoin · on-chain only" to accentSwatches("bitcoin", c.bitcoin),
+        "Lightning · yellow" to accentSwatches("lightning", c.lightning),
         "Status" to listOf(
             Swatch("status.positive", c.status.positive, true), Swatch("status.positiveTint", c.status.positiveTint),
             Swatch("status.negative", c.status.negative, true), Swatch("status.negativeTint", c.status.negativeTint),
@@ -71,7 +72,9 @@ internal fun ColorPage() {
         HaloPalette.Ink500, HaloPalette.Ink400, HaloPalette.Ink300, HaloPalette.Ink200, HaloPalette.Ink100,
     ), Modifier.enterRise(index++))
     Spacer(Modifier.height(HaloTheme.spacing.md))
-    Ramp("volt", listOf(HaloPalette.Volt900, HaloPalette.Volt600, HaloPalette.Volt500, HaloPalette.Volt400, HaloPalette.Volt300), Modifier.enterRise(index++))
+    Ramp("blue", listOf(HaloPalette.Blue900, HaloPalette.Blue700, HaloPalette.Blue600, HaloPalette.Blue500, HaloPalette.Blue400, HaloPalette.Blue050), Modifier.enterRise(index++))
+    Spacer(Modifier.height(HaloTheme.spacing.md))
+    Ramp("yellow", listOf(HaloPalette.Yellow900, HaloPalette.Yellow800, HaloPalette.Yellow600, HaloPalette.Yellow500, HaloPalette.YellowBrand, HaloPalette.Yellow400, HaloPalette.Yellow050), Modifier.enterRise(index++))
     Spacer(Modifier.height(HaloTheme.spacing.md))
     Ramp("btc", listOf(HaloPalette.Btc900, HaloPalette.Btc600, HaloPalette.Btc500, HaloPalette.Btc400, HaloPalette.Btc300), Modifier.enterRise(index))
 }

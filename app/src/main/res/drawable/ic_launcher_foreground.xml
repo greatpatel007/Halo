@@ -7,9 +7,9 @@
     android:viewportHeight="108">
     <path
         android:pathData="M71,54 A17,17 0 1,1 37,54 A17,17 0 1,1 71,54"
-        android:strokeColor="@color/halo_volt"
+        android:strokeColor="@color/halo_blue"
         android:strokeWidth="5" />
     <path
-        android:fillColor="@color/halo_volt"
+        android:fillColor="@color/halo_blue"
         android:pathData="M76.4,35.6 A4,4 0 1,1 68.4,35.6 A4,4 0 1,1 76.4,35.6 Z" />
 </vector>

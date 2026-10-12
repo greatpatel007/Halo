@@ -4,6 +4,6 @@
     <color name="halo_canvas">#FFEBEEF2</color>
     <color name="halo_mark">#FF0D1014</color>
     <!-- Brand constants (launcher icon is always dark). -->
-    <color name="halo_ink">#FF0A0A0B</color>
-    <color name="halo_volt">#FFD4FF3A</color>
+    <color name="halo_ink">#FF090A0C</color>
+    <color name="halo_blue">#FF2A67FF</color>
 </resources>

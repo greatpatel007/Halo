@@ -109,7 +109,7 @@ enum class HoldToSendState {
  * early springs it back. At 100% it locks with a Threshold click, calls [onCommit] and collapses into a
  * circle — spinner while [state] is Sending, then a self-drawing check and a spark burst on Success.
  *
- * [network] sets the colour family: on-chain = Bitcoin orange, Lightning = electric cyan (decision D8).
+ * [network] sets the colour family: on-chain = Bitcoin orange, Lightning = brand yellow (decision D8).
  *
  * Spec: docs/components/HaloHoldToSend.md · Archetype: Gesture-commit · Showroom: halo://showroom/hold-to-send
  *

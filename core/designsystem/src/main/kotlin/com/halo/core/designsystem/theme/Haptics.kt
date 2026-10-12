@@ -35,6 +35,8 @@ enum class HaloHaptic {
     Celebrate,
     /** Glass struck lightly: the glass halo's tap. */
     Ping,
+    /** A tray or sheet lands on a resting point: a soft, round knock. */
+    Land,
     /**
      * The theme Tide: a deep release, then a rush of water and sand that thins out as the wave slows. Played live by
      * the theme transition from the wave's own motion; `perform(Tide)` previews a full wave.

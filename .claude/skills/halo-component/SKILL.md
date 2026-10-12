@@ -63,9 +63,9 @@ tilt, and anything that emits light glows past white on HDR screens. All of that
 8. **Brand rules** (decision record: `docs/proposals/0001-material-surface-stack.md`).
    - Numbers that are values use Paper Mono.
    - Colour carries meaning:
-     - lime (`colors.accent`) = UI actions
+     - blue (`colors.accent`, brand `#2A67FF`) = UI actions
      - orange (`colors.bitcoin`) = on-chain Bitcoin
-     - electric cyan (`colors.lightning`) = Lightning
+     - yellow (`colors.lightning`, brand `#F5DE4B`) = Lightning (warnings are coral, never yellow)
    - A component that represents a payment takes the network into account.
    - **Both themes.** Every component is built and screenshot-verified in dark *and* light.
    - Lighting is physical: one scene light (key light top-left). Depth comes from tone, rims, emission and

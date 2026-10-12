@@ -45,6 +45,8 @@ class HaloSizes(
     val logoMd: Dp = 32.dp,
     /** Glass halo mark, hero (next to the HALO wordmark). */
     val logoLg: Dp = 56.dp,
+    /** The grip pill at the top of a sheet (its touch target is the whole top band). */
+    val sheetHandle: DpSize = DpSize(36.dp, 4.dp),
 )
 
 @Immutable

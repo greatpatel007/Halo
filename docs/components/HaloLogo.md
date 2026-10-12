@@ -12,7 +12,7 @@
 
 **Assumptions:**
 - Geometry follows the splash ring (`splash_halo.xml`), scaled up so the glass has room for detail.
-- The liquid is the accent (lime) in both themes, like the splash mark on dark.
+- The liquid is the accent (brand blue) in both themes, like the splash mark on dark.
 - Continuous motion is wanted (user direction). It is made responsible: it runs only while the mark is on screen,
   the app is in the foreground and battery saver is off, at ~30 fps when calm; reduced motion shows it still.
 - Refraction is of the surface the mark rests on (rendered from `surfaceColor`, the tube's shadow and caustic), never

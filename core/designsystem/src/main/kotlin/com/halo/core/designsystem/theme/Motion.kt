@@ -42,6 +42,12 @@ enum class HaloSpring(val dampingRatio: Float, val stiffness: Float) {
      * out, like water up a beach; it can be reversed mid-flight and keeps its momentum.
      */
     Tide(dampingRatio = 1f, stiffness = 7f),
+    /**
+     * A large surface thrown by the finger and carried by its momentum (sheets, trays): Apple's sheet spring,
+     * damping 0.8 with a ~0.3s response, stiffness = (2π / 0.3)². The only surface spring with a hint of overshoot,
+     * used only after a throw; a placed surface settles on [Gentle].
+     */
+    Throw(dampingRatio = 0.82f, stiffness = 440f),
 }
 
 /** Fade durations — color, alpha and progress only. */

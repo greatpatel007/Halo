@@ -40,6 +40,7 @@ private val usage = mapOf(
     HaloHaptic.Celebrate to "sent · arpeggio",
     HaloHaptic.Tide to "theme · water rush",
     HaloHaptic.Ping to "glass halo · tink",
+    HaloHaptic.Land to "sheet lands · soft knock",
 )
 
 private val tierInfo = mapOf(
