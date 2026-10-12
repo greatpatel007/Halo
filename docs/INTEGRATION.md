@@ -3,39 +3,60 @@
 Halo is a native Jetpack Compose design system. It brings components, motion, scene lighting, haptics and sound, and
 the Tide theme transition. You bring your brand colours and fonts, and you wrap your app in one call.
 
-> **Status (proposal 0004):** steps 1–2 are done (brand, one-call host, Android 8+). Still to come:
-> - a published library (today: include the module from source, see [Install](#1-install))
-> - a minimal sample app
+> **Status (proposal 0004):** steps 1–3 are done (brand, one-call host, Android 8+, versioned library). Paused until
+> the components and demo screens are finished; then a sample app, public hosting and a stable, checked API.
+> Until then the API may change between builds.
 >
 > This guide is updated as each step lands.
 
 ## 1. Install
 
 **Requirements:**
-- A Compose app with `minSdk 26` (Android 8) or higher, and `compileSdk 37`
-- Kotlin 2.x and the Compose compiler plugin
+- A Compose app with `minSdk 26` (Android 8) or higher.
+- `compileSdk 37`: Compose 1.12 (BOM 2026.08), which Halo is built on, requires it.
+- Kotlin 2.x with the Compose compiler plugin.
 
-**Today (from source):**
-1. Copy two folders from this repo into your project:
-   - `core/designsystem`
-   - `build-logic` (its convention plugins configure the module)
-2. Add them to your settings and app build files:
+**Build the library** (in this repo):
+
+```bash
+python3 -I .claude/skills/halo-component/scripts/halo.py publish
+```
+
+This writes a Maven repository to `build/repo` and zips it as
+`build/halo-designsystem-<version>.zip`. Add `--local` to also install it in `~/.m2`.
+
+**Use it in your app:** copy or unzip the repository somewhere your project can reach (for example `third_party/halo-repo`):
 
 ```kotlin
 // settings.gradle.kts
-pluginManagement { includeBuild("build-logic") }
-include(":core:designsystem")
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("third_party/halo-repo") }   // or mavenLocal() after `publish --local`
+    }
+}
 
 // app/build.gradle.kts
-dependencies { implementation(project(":core:designsystem")) }
+dependencies {
+    implementation("com.halo:designsystem:0.1.0")
+}
 ```
 
-The module also needs Halo's version catalog entries (`gradle/libs.versions.toml`, Compose BOM and androidx core /
-lifecycle).
+That one dependency brings Compose UI/foundation/animation (through the Compose BOM), androidx core and lifecycle,
+with sources so your IDE shows the components' code and docs. It ships no Material and no third-party libraries.
 
-**After step 3 (published):** one line, `implementation("com.halo:designsystem:<version>")`.
+**What's in the library:**
+- **Size:** about 0.8 MB of classes and 1 MB of fonts (Satoshi, Paper Mono). R8 strips what you don't use.
+- **Shrinking:** no keep rules are needed.
+- **Resources:** all are prefixed `halo_`, so they can't collide with yours.
+- **Permissions:** the manifest brings `VIBRATE` only; sensors and audio need none.
 
-The module's manifest brings the `VIBRATE` permission. It needs no other permissions: sensors and audio need none.
+**Versioning:** from the first release, the public API is recorded in `core/designsystem/api/designsystem.api` and
+the build fails if it changes by accident; every API change comes with a version bump (`HALO_VERSION`).
+
+**Alternative, from source:** include `core/designsystem` and `build-logic` as modules (`includeBuild("build-logic")`,
+`include(":core:designsystem")`, `implementation(project(":core:designsystem"))`).
 
 ## 2. Wrap your app (one call)
 

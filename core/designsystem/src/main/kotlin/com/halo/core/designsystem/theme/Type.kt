@@ -13,14 +13,14 @@ import com.halo.core.designsystem.R
 
 /** Paper Mono — every number, amount, address, label and data field. 8 static weights (OFL 1.1). */
 val PaperMono = FontFamily(
-    Font(R.font.paper_mono_thin, FontWeight.Thin),
-    Font(R.font.paper_mono_extralight, FontWeight.ExtraLight),
-    Font(R.font.paper_mono_light, FontWeight.Light),
-    Font(R.font.paper_mono_regular, FontWeight.Normal),
-    Font(R.font.paper_mono_medium, FontWeight.Medium),
-    Font(R.font.paper_mono_semibold, FontWeight.SemiBold),
-    Font(R.font.paper_mono_bold, FontWeight.Bold),
-    Font(R.font.paper_mono_extrabold, FontWeight.ExtraBold),
+    Font(R.font.halo_paper_mono_thin, FontWeight.Thin),
+    Font(R.font.halo_paper_mono_extralight, FontWeight.ExtraLight),
+    Font(R.font.halo_paper_mono_light, FontWeight.Light),
+    Font(R.font.halo_paper_mono_regular, FontWeight.Normal),
+    Font(R.font.halo_paper_mono_medium, FontWeight.Medium),
+    Font(R.font.halo_paper_mono_semibold, FontWeight.SemiBold),
+    Font(R.font.halo_paper_mono_bold, FontWeight.Bold),
+    Font(R.font.halo_paper_mono_extrabold, FontWeight.ExtraBold),
 )
 
 /**
@@ -36,7 +36,7 @@ val Satoshi = FontFamily(
 )
 
 private fun satoshi(weight: FontWeight) = Font(
-    resId = R.font.satoshi_variable,
+    resId = R.font.halo_satoshi_variable,
     weight = weight,
     variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)),
 )

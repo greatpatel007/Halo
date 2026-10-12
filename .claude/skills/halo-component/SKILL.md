@@ -217,9 +217,12 @@ python3 -I .claude/skills/halo-component/scripts/halo.py shot <id>
 6. Light: with a simulated tilt (`adb emu sensor set acceleration 6.5:7.3:0.81`, capture within ~0.6 s, reset to
    `0:9.77:0.81`) highlights and shadows move with no layout change.
 7. Continuous motion: report the frame counts (non-negotiable 13), and check the Runtime lab (steps/s, sensors).
-8. Older phones: `halo.py shot <id> --legacy` (no shaders, no blur) in dark and light; it must still read as the same
+8. Library hygiene: the design system will ship as a library. Anything not meant for host apps is `internal`, and
+   library resources are named `halo_*`. (The public-API check is off until the first release; once
+   `HALO_API_CHECK=true`, run `apiDump` after an intended API change.)
+9. Older phones: `halo.py shot <id> --legacy` (no shaders, no blur) in dark and light; it must still read as the same
    component. `halo.py gradle :core:designsystem:lintDebug` reports no `NewApi`.
-9. Fix, then repeat. Report the result honestly: anything not verified (how a haptic feels on a real actuator,
+10. Fix, then repeat. Report the result honestly: anything not verified (how a haptic feels on a real actuator,
    HDR on an HDR screen, 120 Hz feel) is listed as unverified.
 
 **Capturing interaction and motion states.** These are proven recipes; don't improvise coordinates or timing.

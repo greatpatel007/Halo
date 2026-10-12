@@ -13,6 +13,8 @@ default location) by itself. Never put machine-specific paths in `gradle.propert
 - Build: `halo.py gradle :app:assembleDebug` (any Gradle args are passed through to `gradlew` / `gradlew.bat`)
 - Unit tests: `halo.py gradle :core:domain:test`
 - Design-system lint: `python3 -I .claude/skills/halo-component/scripts/lint_ds.py`
+- Publish the design system (`com.halo:designsystem`), when needed: `halo.py publish [--local]` → `build/repo` + zip.
+  Not used during development; the public-API check (`HALO_API_CHECK`) is switched on at the first release.
 - Build + install + open a Showroom page + screenshot: `halo.py shot <id>` → `shots/<id>.png`
   - Pages are `halo://showroom/<id>`. Debug params: `?slowmo=5&grid=8&rm=1` (`--slowmo 5 --grid 8 --reduced`).
   - Find an element's coordinates with `halo.py find "<label>"`.
@@ -70,5 +72,5 @@ default location) by itself. Never put machine-specific paths in `gradle.propert
 - Tokens and design rules: `.claude/skills/halo-component/references/` (tokens, motion recipes, haptics,
   archetypes, pixel-perfect, native Android, anti-patterns, architecture).
 - Components: `docs/components/REGISTRY.md` and one spec per component.
-- Proposals: `docs/proposals/`. In progress: 0004 (portable design system, step 3 next: library packaging). Then 0001.
+- Proposals: `docs/proposals/`. 0004 (portable design system) is paused after step 3 until the components and demo screens are done; then step 4 (sample app, hosting, API check on). Then 0001.
 - Adding Halo to another app: `docs/INTEGRATION.md`.

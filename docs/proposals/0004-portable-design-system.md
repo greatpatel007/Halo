@@ -1,6 +1,6 @@
 # Proposal 0004: Portable design system, plug Halo into any app
 
-**Status:** In progress (2026-10-12): steps 1–2 built · **Raised by:** product direction: "we can easily plug this into
+**Status:** Paused (2026-10-12): steps 1–3 built; step 4 and the release work wait until the components and demo screens are designed · **Raised by:** product direction: "we can easily plug this into
 any app without much hassle."
 
 ## Problem
@@ -20,8 +20,8 @@ system through `HaloTheme.runtime`. A host app still hits these walls:
 |---|---|---|
 | 1 | **Brand + one-call host.** `HaloBrand` / `haloBrand(accent, …)` (OKLCH-derived roles, AA contrast checked, hue kept), `HaloFonts`; `HaloApp { }` (theme, appearance, Tide, edge-to-edge, bar icons, platform night mode); `HaloAppearance` (built-in store or adapt your own); `HaloThemeSwitch`; haptic and sound settings persist. Showroom → Foundations → Brand. Guide: `docs/INTEGRATION.md` | built |
 | 2 | **Android 8+ (API 26).** `HaloPlatform` decides shaders (13+) and blur (12+). Canvas fallbacks keep the look: `CanvasRelief` (gradient bevels, recess walls, stacked contact shadows), bitmap grain, `drawCanvasHalo` (ring, spill, circulating liquid, glints), frosted glass, stepped glow below Android 9, crossfade for the Tide. Haptics: primitives 12+, legacy audio attributes, CONFIRM/REJECT fallbacks; thermal 10+. Debug `?legacy=1` / `shot --legacy` | built |
-| 3 | **Library packaging.** Standalone Gradle setup (no convention plugins needed by consumers), `maven-publish` with a version, consumer R8 rules, binary-compatibility API dump checked in CI, compileSdk lowered to what the APIs need | |
-| 4 | **Sample and guide.** A minimal `:sample` app (one screen, own brand, no Hilt) built in CI as the plug-in proof; the guide finished with the published coordinates | |
+| 3 | **Library packaging.** `com.halo:designsystem:<HALO_VERSION>` via `maven-publish` (AAR + sources + Gradle module metadata, Compose BOM imported in the POM); `halo.py publish [--local]` → `build/repo` + zip. Public API guarded by `api/designsystem.api` (`halo.api` plugin: `apiDump`, `apiCheck` in `check`). Resources prefixed `halo_`. No consumer R8 rules needed | built |
+| 4 | **Release (after the design work).** Switch the API check on (`HALO_API_CHECK=true`, first `apiDump`), pick hosting and the group ID, settle the font licences. **Sample and guide.** A minimal `:sample` app (one screen, own brand, no Hilt) built in CI as the plug-in proof; the guide finished with the published coordinates | |
 
 ## Step 1 decisions
 - **What a brand is:** palettes for both themes + two type families. Spacing, motion, light, materials, haptics and
@@ -37,6 +37,22 @@ system through `HaloTheme.runtime`. A host app still hits these walls:
 - **Platform night mode only when safe.** `HaloApp` mirrors changes into `UiModeManager.setApplicationNightMode`
   (so the splash and system UI match) only if the activity declares `configChanges="uiMode"`; otherwise a switch
   would restart the activity mid-wave, so it logs a warning instead.
+
+## Step 3 decisions and results (2026-10-12)
+- **Paused by the owner:** the library won't be consumed until the design work is done, so the API check is
+  dormant (`HALO_API_CHECK=false`, no reference dump) to keep component work free of friction. Publishing stays
+  available (`halo.py publish`).
+- **API guard:** Kotlin 2.4's built-in ABI validation doesn't see AGP 9's built-in Kotlin compilation (it dumps
+  nothing), so a small build-logic plugin reads the release classes through AGP's artifact API (ASM +
+  kotlin-metadata-jvm). It drops Kotlin `internal`, private, synthetic and compiler-generated members. The first dump
+  has 128 public classes. Checked: adding a public function fails `apiCheck`, and reverting passes.
+- **compileSdk 37 stays:** every Compose 1.12 artifact declares `minCompileSdk=37`, so host apps need it whatever
+  Halo declares. Lowering it would mean an older Compose.
+- **Coordinates:** `com.halo` is a placeholder group. Maven Central needs a namespace you own (e.g.
+  `io.github.greatpatel007`); `HALO_GROUP` changes it in one place.
+- **Open (owner's call):** where to host it (GitHub Packages, JitPack from tags, or Maven Central). Also, the fonts'
+  licences: Paper Mono is OFL (its licence text must ship with it), and Satoshi's ITF licence must allow
+  redistribution inside a library. Check both before publishing publicly.
 
 ## Step 2 results (emulator, 2026-10-12)
 - minSdk 33 → 26 for every module. Android Lint: no `NewApi` errors (it found ~120 call sites; all gated or given a

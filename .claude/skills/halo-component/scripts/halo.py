@@ -10,6 +10,7 @@ Usage (from anywhere; paths are resolved against the repo root):
     python3 -I .claude/skills/halo-component/scripts/halo.py find "Hold to send"
     python3 -I .claude/skills/halo-component/scripts/halo.py zoom shots/toggle-dark.png 400 1200 --w 300 --h 160 --scale 4
     python3 -I .claude/skills/halo-component/scripts/halo.py doctor
+    python3 -I .claude/skills/halo-component/scripts/halo.py publish            # → build/halo-designsystem-<v>.zip
 
 On Windows use `python` (or `py`) instead of `python3`.
 
@@ -170,21 +171,22 @@ def cmd_shot(args: argparse.Namespace) -> None:
     # 1. Device: reuse a running one, otherwise boot the AVD and wait for boot_completed.
     ensure_device(args.avd)
 
-    # 2. Build + install (installing restarts the app process, so every shot starts clean).
+    # 2. Build + install.
     if not args.no_build:
         if run_gradle([":app:assembleDebug", "--console=plain", "-q"]) != 0:
             die("Build failed")
         adb("install", "-r", "-d", str(ROOT / "app/build/outputs/apk/debug/app-debug.apk"))
-    else:
-        # Start clean either way: a running app routes the link in place and keeps process-wide debug state.
-        adb("shell", "am", "force-stop", PACKAGE, check=False)
+    # Start clean either way. A running app routes the link in place and keeps process-wide debug state, and after an
+    # install Android restores the old task's saved navigation, which ignores the deep link.
+    adb("shell", "am", "force-stop", PACKAGE, check=False)
 
     # 3. Open the page (+ debug dock parameters) and let enter choreography settle.
     query = f"?slowmo={args.slowmo:g}&grid={args.grid}&rm={1 if args.reduced else 0}&legacy={1 if args.legacy else 0}"
     if args.theme:
         query += f"&theme={args.theme}"
     # Single-quoted so the device shell doesn't treat '&' as a separator.
-    adb("shell", "am", "start", "-W", "-a", "android.intent.action.VIEW",
+    # A fresh task: a restored one brings back its saved navigation, which wins over the deep link.
+    adb("shell", "am", "start", "-W", "--activity-clear-task", "-a", "android.intent.action.VIEW",
         "-d", f"'halo://showroom/{args.page}{query}'", PACKAGE)
     time.sleep(args.settle_ms / 1000)
 
@@ -193,6 +195,27 @@ def cmd_shot(args: argparse.Namespace) -> None:
     adb("pull", "/sdcard/halo_shot.png", str(out))
     adb("shell", "rm", "/sdcard/halo_shot.png", check=False)
     print(f"Saved {out}")
+
+
+def cmd_publish(args: argparse.Namespace) -> None:
+    """Publishes com.halo:designsystem to build/repo (and ~/.m2 with --local), checking the public API first once a
+    reference dump exists, and zips the repository so it can be handed to another project or any Maven host."""
+    tasks = [":core:designsystem:publishReleasePublicationToHaloRepository"]
+    if (ROOT / "core/designsystem/api/designsystem.api").exists():
+        tasks.insert(0, ":core:designsystem:apiCheck")
+    if args.local:
+        tasks.append(":core:designsystem:publishReleasePublicationToMavenLocal")
+    if run_gradle([*tasks, "--console=plain", "-q"]) != 0:
+        die("Publish failed (an API change needs `halo.py gradle :core:designsystem:apiDump` first)")
+    props = (ROOT / "gradle.properties").read_text(encoding="utf-8")
+    version = re.search(r"^HALO_VERSION=(.+)$", props, re.M)
+    version = version.group(1).strip() if version else "unknown"
+    archive = shutil.make_archive(str(ROOT / "build" / f"halo-designsystem-{version}"), "zip", ROOT / "build" / "repo")
+    print(f"Published com.halo:designsystem:{version}")
+    print(f"  Maven repository: {ROOT / 'build' / 'repo'}")
+    print(f"  Zipped:           {archive}")
+    if args.local:
+        print("  Also in ~/.m2 (mavenLocal())")
 
 
 def cmd_find(args: argparse.Namespace) -> None:
@@ -338,6 +361,10 @@ def main() -> None:
     p.add_argument("--theme", choices=("dark", "light", "system"))
     p.add_argument("--avd", default=os.environ.get("HALO_AVD", "Pixel_10_Pro"))
     p.set_defaults(func=cmd_shot)
+
+    p = sub.add_parser("publish", help="check the API, publish the design system to build/repo and zip it")
+    p.add_argument("--local", action="store_true", help="also install into ~/.m2 (mavenLocal)")
+    p.set_defaults(func=cmd_publish)
 
     p = sub.add_parser("find", help="print bounds + centre (device px) of elements by accessibility label")
     p.add_argument("desc", help="substring of content-desc or text")

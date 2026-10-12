@@ -7,6 +7,8 @@ group = "com.halo.buildlogic"
 dependencies {
     compileOnly(libs.android.gradlePlugin)
     compileOnly(libs.kotlin.gradlePlugin)
+    implementation(libs.asm.tree)
+    implementation(libs.kotlin.metadata.jvm)
 }
 
 gradlePlugin {
@@ -30,6 +32,10 @@ gradlePlugin {
         register("hilt") {
             id = libs.plugins.halo.hilt.get().pluginId
             implementationClass = "HiltConventionPlugin"
+        }
+        register("api") {
+            id = libs.plugins.halo.api.get().pluginId
+            implementationClass = "ApiConventionPlugin"
         }
         register("jvmLibrary") {
             id = libs.plugins.halo.jvm.library.get().pluginId

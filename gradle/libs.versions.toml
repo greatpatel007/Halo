@@ -17,6 +17,8 @@ kotlinxSerialization = "1.11.0"
 javaxInject = "1"
 junit = "4.13.2"
 turbine = "1.2.1"
+asm = "9.9.1"
+kotlinMetadata = "2.3.21"
 
 [libraries]
 # Compose (versions managed by the BOM). No material / material3: every component is hand-built.
@@ -57,6 +59,9 @@ turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine
 # build-logic (convention plugins compile against these)
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+# Public-API dump of the published library (halo.api)
+asm-tree = { group = "org.ow2.asm", name = "asm-tree", version.ref = "asm" }
+kotlin-metadata-jvm = { group = "org.jetbrains.kotlin", name = "kotlin-metadata-jvm", version.ref = "kotlinMetadata" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -74,3 +79,4 @@ halo-android-compose = { id = "halo.android.compose" }
 halo-android-feature = { id = "halo.android.feature" }
 halo-hilt = { id = "halo.hilt" }
 halo-jvm-library = { id = "halo.jvm.library" }
+halo-api = { id = "halo.api" }
