@@ -11,6 +11,7 @@ Every design-system component, in build order. Maintained by the `halo-component
 | HaloToggle | Toggle | Review | `component/HaloToggle.kt` | `halo://showroom/toggle` |
 | HaloLogo | Feedback (brand mark) | Review | `component/HaloLogo.kt` | `halo://showroom/logo` |
 | HaloSheet | Container / Overlay | Review | `component/HaloSheet.kt` | `halo://showroom/sheet` |
+| HaloSegmentedControl | Toggle | Review | `component/HaloSegmentedControl.kt` | `halo://showroom/segmented` |
 
 ## Planned (build order)
 Components still to build, one at a time in this order (P1 unlocks the Home, Send and Receive demo screens). When one
@@ -20,7 +21,6 @@ owner (references, a real prototype in the Showroom) when its turn comes. Inspir
 
 | # | Name | Archetype | Priority | What it is | Used on |
 |---|---|---|---|---|---|
-| 2 | HaloSegmentedControl | Input | P1 | Sliding pill selector (sats/BTC/fiat, on-chain/Lightning, fee speed) | Send, Receive, Settings |
 | 3 | HaloAmountKeypad | Input | P1 | Custom number pad: decimal, hold-to-repeat delete, tick per key | Send, Receive |
 | 4 | HaloTextField | Input | P1 | Address / invoice / search input: paste, clear, live validation, error shake | Send, Settings |
 | 5 | HaloTransactionRow | Value display | P1 | Direction, title, time, network-coloured amount, pending pulse, failed state | Home, Activity |

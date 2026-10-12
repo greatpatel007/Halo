@@ -1,6 +1,6 @@
 # HaloToggle
 
-> A switch you can almost feel. A ceramic (light) or graphite (dark) thumb with two finger dishes slides in a
+> A switch you can almost feel. A ceramic (light) or graphite (dark) thumb with one finger dish slides in a
 > sunken channel, leans under your finger, and uncovers a velvet fill that brightens as it leaves the thumb's
 > shadow. Built from `Refs/toggle.mp4` (measurements in `docs/research/0001-reference-analysis.md`).
 
@@ -8,7 +8,7 @@
 |---|---|---|---|
 | Toggle | Review | `halo://showroom/toggle` | `core/designsystem/.../component/HaloToggle.kt` |
 
-**Design read:** `HaloToggle · Toggle · switches a setting (and the app theme) · a ceramic/graphite thumb with finger dishes slides on the measured Mechanical spring, leans under the finger, and uncovers a velvet fill that brightens as it leaves the thumb's shadow`
+**Design read:** `HaloToggle · Toggle · switches a setting (and the app theme) · a ceramic/graphite thumb with a finger dish slides on the measured Mechanical spring, leans under the finger, and uncovers a velvet fill that brightens as it leaves the thumb's shadow`
 
 **Assumptions:**
 - `checked` = thumb at the end edge (fill visible).
@@ -25,11 +25,11 @@
 ## 2. Anatomy
 All proportions are of housing height H, taken from the reference frame.
 ```
- ┌──────────────── housing W × H (switchMd 80×30, switchLg 112×42) ── raised rim, bevel 0.16H, body material
+ ┌──────────────── housing W × H (switchMd 52×30, switchLg 76×42) ── raised rim, bevel 0.16H, body material
  │ ┌──────────── channel: inset 0.20H, radius full, bevel 0.12H, depth 0.18H, recess floor + AO + rim self-shadow
  │ │ ▓▓▓▓▓▓▓▓▓[( ◯  ◯ )]    velvet fill (texture layer) from the start edge to the thumb centre
- │ │          thumb: inset 0.11H, height 0.78H, width 1.92 × height, knob material, bevel 0.30·th
- │ │          dishes: concentric with the thumb's rounded ends, r 0.38·th, depth 0.10·th (concave)
+ │ │          thumb: inset 0.11H, circular (diameter 0.78H), knob material, bevel 0.30·th
+ │ │          dish: one, centred on the thumb, r 0.38·th, depth 0.12·th (concave)
  └─ contact shadows from the scene light: housing at elevation 0.06H, thumb at 0.16H (pressed 0.07H)
  Layout height = max(H, 48dp touch target), housing centred.
 ```
@@ -61,8 +61,8 @@ fun HaloToggle(
 
 | Size | Housing | Thumb | Travel |
 |---|---|---|---|
-| Medium | 80 × 30 | 45 × 23.4 | ≈ 28dp |
-| Large | 112 × 42 | 63 × 32.8 | ≈ 40dp |
+| Medium | 52 × 30 | ⌀ 23.4 | ≈ 22dp |
+| Large | 76 × 42 | ⌀ 32.8 | ≈ 34dp |
 
 Theme materials: dark = soft-touch Ink850 housing, Ink950 channel floor, graphite Ink600 satin thumb; light =
 ceramic Ceramic050 housing, Ceramic150 floor, Ceramic000 thumb.
@@ -134,5 +134,5 @@ ceramic Ceramic050 housing, Ceramic150 floor, Ceramic000 thumb.
 ## 13. Verification
 - Lint: OK.
 - Screenshots: `shots/toggle-dark.png` and `shots/toggle-light.png` (state matrix), `shots/toggle-pressed.png`, `shots/toggle-mid.png`.
-- Zoomed pixel review of the dishes, channel rim, fill edge and shadows in both themes (`halo.py zoom`).
+- Zoomed pixel review of the dish, channel rim, fill edge and shadows in both themes (`halo.py zoom`).
 - Unverified: how the haptics feel (on device).

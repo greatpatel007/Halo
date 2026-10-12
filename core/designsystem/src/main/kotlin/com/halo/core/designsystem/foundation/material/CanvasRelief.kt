@@ -102,18 +102,29 @@ internal class CanvasRelief : ReliefRenderer {
         }
     }
 
-    /** A bevel ring of width [width] inside [bounds], graded from [lit] on the light's side to [shaded] opposite. */
+    /**
+     * A bevel ring of width [width] inside [bounds], graded from [lit] on the light's side to [shaded] opposite. It is
+     * feathered towards the face (concentric rings fading inwards), so its inner edge never reads as an outline.
+     */
     private fun DrawScope.bevel(bounds: Rect, radius: Float, width: Float, light: HaloLight, lit: Color, shaded: Color) {
         val len = hypot(light.x, light.y)
         if (len < MIN_LEAN || width <= 0f) return
         val reach = hypot(bounds.width, bounds.height) / 2f
         val toLight = Offset(light.x / len, light.y / len) * reach
-        val inset = bounds.deflate(width / 2f)
-        drawRoundRect(
-            Brush.linearGradient(listOf(lit, Color.Transparent, shaded), bounds.center + toLight, bounds.center - toLight),
-            inset.topLeft, inset.size, CornerRadius((radius - width / 2f).coerceAtLeast(0f)),
-            style = Stroke(width),
-        )
+        val ring = width / BEVEL_RINGS
+        for (i in 0 until BEVEL_RINGS) {
+            val fade = 1f - i.toFloat() / BEVEL_RINGS
+            val inset = bounds.deflate(ring * i + ring / 2f)
+            drawRoundRect(
+                Brush.linearGradient(
+                    listOf(lit.copy(alpha = lit.alpha * fade), Color.Transparent, shaded.copy(alpha = shaded.alpha * fade)),
+                    bounds.center + toLight,
+                    bounds.center - toLight,
+                ),
+                inset.topLeft, inset.size, CornerRadius((radius - ring * i - ring / 2f).coerceAtLeast(0f)),
+                style = Stroke(ring),
+            )
+        }
     }
 
     /** A concave finger rest: shaded towards the light, lit on the far rim. */
@@ -138,5 +149,6 @@ internal class CanvasRelief : ReliefRenderer {
         const val MIN_WALL = 1f
         const val MIN_LEAN = 1e-3f
         const val SHADOW_LAYERS = 12
+        const val BEVEL_RINGS = 8
     }
 }

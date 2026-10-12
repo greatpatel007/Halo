@@ -65,8 +65,8 @@ enum class HaloToggleTone {
 enum class HaloToggleSize { Medium, Large }
 
 /**
- * The physical switch from `Refs/toggle.mp4`. A ceramic (light) or graphite (dark) thumb with two finger
- * dishes slides in a sunken channel on the measured [HaloSpring.Mechanical] spring, leans under the finger,
+ * The physical switch from `Refs/toggle.mp4`. A ceramic (light) or graphite (dark) thumb with one finger
+ * dish slides in a sunken channel on the measured [HaloSpring.Mechanical] spring, leans under the finger,
  * and uncovers a velvet fill that brightens as it leaves the thumb's light-caused shadow.
  *
  * Every surface is rendered by the SDF lighting shaders in its own layer: the housing never redraws, the fill
@@ -232,8 +232,7 @@ fun HaloToggle(
                     height = h * THUMB_RAISE,
                     material = materials.knob,
                     light = light,
-                    dishA = Dish(Offset(h / 2f, h / 2f), h * DISH_RADIUS, h * DISH_DEPTH),
-                    dishB = Dish(Offset(w - h / 2f, h / 2f), h * DISH_RADIUS, h * DISH_DEPTH),
+                    dishA = Dish(Offset(w / 2f, h / 2f), h * DISH_RADIUS, h * DISH_DEPTH),
                     seed = THUMB_SEED,
                 )
             }
@@ -259,7 +258,7 @@ private class ToggleGeometry(private val width: Int, height: Int) {
 
     val thumbInset = (h * 0.11f).roundToInt()
     val thumbHeight = height - thumbInset * 2
-    val thumbWidth = (thumbHeight * 1.92f).roundToInt()
+    val thumbWidth = thumbHeight
     val travel = (width - thumbInset * 2 - thumbWidth).toFloat()
     val thumbElevation = h * 0.16f
 

@@ -70,7 +70,7 @@ Rules:
   - controls: `controlSm 36`, `controlMd 48`, `controlLg 56`, `controlXl 64`
   - `minTouch 48`
   - icons: `iconSm 16`, `iconMd 20`, `iconLg 24`, `iconXl 32`
-  - switch housings: `switchMd 80×30`, `switchLg 112×42`
+  - switch housings: `switchMd 52×30`, `switchLg 76×42` (round thumb; travel ≈ 0.8 × its diameter, like a real switch)
   - glass halo mark: `logoMd 32`, `logoLg 56`
   - sheet grip: `sheetHandle 36×4`
 - **`radius`:**

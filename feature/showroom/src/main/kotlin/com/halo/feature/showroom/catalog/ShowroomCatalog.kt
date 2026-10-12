@@ -15,6 +15,7 @@ import com.halo.feature.showroom.pages.components.HoldToSendPage
 import com.halo.feature.showroom.pages.components.LogoPage
 import com.halo.feature.showroom.pages.components.SheetPage
 import com.halo.feature.showroom.pages.components.RollingAmountPage
+import com.halo.feature.showroom.pages.components.SegmentedPage
 import com.halo.feature.showroom.pages.components.TogglePage
 
 enum class ShowroomSection(val title: String) {
@@ -50,6 +51,7 @@ object ShowroomCatalog {
         ShowroomPage("rolling-amount", "Rolling amount", "Odometer digits · sats / BTC / fiat · privacy", ShowroomSection.Components) { RollingAmountPage() },
         ShowroomPage("hold-to-send", "Hold to send", "Charge · lock · check · spark burst", ShowroomSection.Components) { HoldToSendPage() },
         ShowroomPage("toggle", "Toggle", "Ceramic / graphite switch · the theme switch", ShowroomSection.Components) { TogglePage() },
+        ShowroomPage("segmented", "Segmented control", "Thumb in a sunken track · detents · throw and land", ShowroomSection.Components) { SegmentedPage() },
         ShowroomPage("sheet", "Sheet", "Tray that is thrown, carried and lands · morphs between steps", ShowroomSection.Components) { SheetPage() },
         ShowroomPage("logo", "Logo", "Glass halo · radium liquid · real fluid physics", ShowroomSection.Components) { LogoPage() },
     )
