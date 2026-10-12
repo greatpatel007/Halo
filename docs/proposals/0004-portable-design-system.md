@@ -1,6 +1,6 @@
 # Proposal 0004: Portable design system, plug Halo into any app
 
-**Status:** In progress (2026-10-12): step 1 built · **Raised by:** product direction: "we can easily plug this into
+**Status:** In progress (2026-10-12): steps 1–2 built · **Raised by:** product direction: "we can easily plug this into
 any app without much hassle."
 
 ## Problem
@@ -19,7 +19,7 @@ system through `HaloTheme.runtime`. A host app still hits these walls:
 | Step | What | Status |
 |---|---|---|
 | 1 | **Brand + one-call host.** `HaloBrand` / `haloBrand(accent, …)` (OKLCH-derived roles, AA contrast checked, hue kept), `HaloFonts`; `HaloApp { }` (theme, appearance, Tide, edge-to-edge, bar icons, platform night mode); `HaloAppearance` (built-in store or adapt your own); `HaloThemeSwitch`; haptic and sound settings persist. Showroom → Foundations → Brand. Guide: `docs/INTEGRATION.md` | built |
-| 2 | **Android 8+ (API 26).** Every shader gets a canvas fallback that keeps the look (gradients for glass and relief, a bitmap grain, a static lit logo); crossfade for the Tide. Haptic tiers already degrade | next |
+| 2 | **Android 8+ (API 26).** `HaloPlatform` decides shaders (13+) and blur (12+). Canvas fallbacks keep the look: `CanvasRelief` (gradient bevels, recess walls, stacked contact shadows), bitmap grain, `drawCanvasHalo` (ring, spill, circulating liquid, glints), frosted glass, stepped glow below Android 9, crossfade for the Tide. Haptics: primitives 12+, legacy audio attributes, CONFIRM/REJECT fallbacks; thermal 10+. Debug `?legacy=1` / `shot --legacy` | built |
 | 3 | **Library packaging.** Standalone Gradle setup (no convention plugins needed by consumers), `maven-publish` with a version, consumer R8 rules, binary-compatibility API dump checked in CI, compileSdk lowered to what the APIs need | |
 | 4 | **Sample and guide.** A minimal `:sample` app (one screen, own brand, no Hilt) built in CI as the plug-in proof; the guide finished with the published coordinates | |
 
@@ -37,6 +37,15 @@ system through `HaloTheme.runtime`. A host app still hits these walls:
 - **Platform night mode only when safe.** `HaloApp` mirrors changes into `UiModeManager.setApplicationNightMode`
   (so the splash and system UI match) only if the activity declares `configChanges="uiMode"`; otherwise a switch
   would restart the activity mid-wave, so it logs a warning instead.
+
+## Step 2 results (emulator, 2026-10-12)
+- minSdk 33 → 26 for every module. Android Lint: no `NewApi` errors (it found ~120 call sites; all gated or given a
+  fallback). Three older lint errors fixed on the way (primitive constants, LocalActivity, EnterRise read).
+- Legacy render (`--legacy`) checked in dark and light: toggles keep their ceramic/graphite relief and contact
+  shadows, the hero keeps its grain, the dock frosts, the logo keeps its glowing liquid. The theme switch crossfades.
+  No crashes.
+- Not verified: a real Android 8–12 device or emulator image (none installed). The legacy simulation exercises the
+  same fallback code paths, but OEM drivers and older platform behaviour (e.g. vibration on Android 8) are untested.
 
 ## Step 1 results (emulator, 2026-10-12)
 - Brand page: ocean / coral / violet / mint / sun seeds re-brand button, toggle and text in both themes.

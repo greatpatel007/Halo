@@ -1,6 +1,8 @@
 package com.halo.core.designsystem.foundation.material
 
 import android.graphics.RuntimeShader
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -8,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.toArgb
+import com.halo.core.designsystem.runtime.HaloPlatform
 import com.halo.core.designsystem.theme.HaloLight
 
 /** How a surface responds to the scene light. Presets live with the components until the material engine lands. */
@@ -62,16 +65,13 @@ class Dish(val center: Offset, val radius: Float, val depth: Float)
 class VelvetColors(val top: Color, val bottom: Color, val rim: Color)
 
 /**
- * Owns the compiled shaders for one element's surfaces. Create once with `remember { ReliefPainter() }`;
- * each surface has its own shader instance so uniforms recorded for one draw can never leak into another.
+ * Draws lit relief surfaces for one element. Create once with `remember { ReliefPainter() }`. On Android 13+ each
+ * surface is lit per pixel by its own AGSL shader instance (uniforms recorded for one draw never leak into another);
+ * older phones get [CanvasRelief], which keeps the same light: a lit and a shaded bevel, recess walls and soft
+ * contact shadows from gradients.
  */
 class ReliefPainter {
-    private val body = RuntimeShader(RELIEF_AGSL)
-    private val texture = RuntimeShader(VELVET_AGSL)
-    private val shadow = RuntimeShader(SHADOW_AGSL)
-    private val bodyBrush = ShaderBrush(body)
-    private val textureBrush = ShaderBrush(texture)
-    private val shadowBrush = ShaderBrush(shadow)
+    private val renderer: ReliefRenderer = if (HaloPlatform.shaders) AgslRelief() else CanvasRelief()
 
     /** Draws a lit relief body (with optional recess and dishes) into [bounds]. */
     fun drawRelief(
@@ -86,6 +86,71 @@ class ReliefPainter {
         dishA: Dish? = null,
         dishB: Dish? = null,
         seed: Float = 0f,
+    ) = renderer.drawRelief(scope, bounds, radius, bevel, height, material, light, recess, dishA, dishB, seed)
+
+    /** Draws the velvet texture layer inside [channel], horizontally limited to [from]..[to]. */
+    fun drawVelvet(
+        scope: DrawScope,
+        channel: Recess,
+        from: Float,
+        to: Float,
+        colors: VelvetColors,
+        grain: Float,
+        light: HaloLight,
+        seed: Float = 0f,
+    ) = renderer.drawVelvet(scope, channel, from, to, colors, grain, light, seed)
+
+    /**
+     * Draws the contact shadow of a rounded caster [elevation] px above the surface beneath it.
+     * Offset and softness follow the scene light; [strength] scales the light's shadow opacity.
+     */
+    fun drawContactShadow(
+        scope: DrawScope,
+        caster: Rect,
+        radius: Float,
+        elevation: Float,
+        light: HaloLight,
+        strength: Float = 1f,
+    ) = renderer.drawContactShadow(scope, caster, radius, elevation, light, strength)
+}
+
+internal interface ReliefRenderer {
+    fun drawRelief(
+        scope: DrawScope, bounds: Rect, radius: Float, bevel: Float, height: Float, material: ReliefMaterial,
+        light: HaloLight, recess: Recess?, dishA: Dish?, dishB: Dish?, seed: Float,
+    )
+
+    fun drawVelvet(
+        scope: DrawScope, channel: Recess, from: Float, to: Float, colors: VelvetColors, grain: Float, light: HaloLight,
+        seed: Float,
+    )
+
+    fun drawContactShadow(scope: DrawScope, caster: Rect, radius: Float, elevation: Float, light: HaloLight, strength: Float)
+}
+
+/** The AGSL renderer: per-pixel lighting of the height field (Android 13+). */
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+private class AgslRelief : ReliefRenderer {
+    private val body = RuntimeShader(RELIEF_AGSL)
+    private val texture = RuntimeShader(VELVET_AGSL)
+    private val shadow = RuntimeShader(SHADOW_AGSL)
+    private val bodyBrush = ShaderBrush(body)
+    private val textureBrush = ShaderBrush(texture)
+    private val shadowBrush = ShaderBrush(shadow)
+
+    /** Draws a lit relief body (with optional recess and dishes) into [bounds]. */
+    override fun drawRelief(
+        scope: DrawScope,
+        bounds: Rect,
+        radius: Float,
+        bevel: Float,
+        height: Float,
+        material: ReliefMaterial,
+        light: HaloLight,
+        recess: Recess?,
+        dishA: Dish?,
+        dishB: Dish?,
+        seed: Float,
     ) {
         with(body) {
             setFloatUniform("body", bounds.left, bounds.top, bounds.right, bounds.bottom)
@@ -125,7 +190,7 @@ class ReliefPainter {
     }
 
     /** Draws the velvet texture layer inside [channel], horizontally limited to [from]..[to]. */
-    fun drawVelvet(
+    override fun drawVelvet(
         scope: DrawScope,
         channel: Recess,
         from: Float,
@@ -133,7 +198,7 @@ class ReliefPainter {
         colors: VelvetColors,
         grain: Float,
         light: HaloLight,
-        seed: Float = 0f,
+        seed: Float,
     ) {
         if (to <= from) return
         with(texture) {
@@ -160,13 +225,13 @@ class ReliefPainter {
      * Draws the contact shadow of a rounded caster [elevation] px above the surface beneath it.
      * Offset and softness follow the scene light; [strength] scales the light's shadow opacity.
      */
-    fun drawContactShadow(
+    override fun drawContactShadow(
         scope: DrawScope,
         caster: Rect,
         radius: Float,
         elevation: Float,
         light: HaloLight,
-        strength: Float = 1f,
+        strength: Float,
     ) {
         val offset = Offset(light.shadowDx * elevation, light.shadowDy * elevation)
         val blur = elevation * SHADOW_SOFTNESS + SHADOW_MIN_BLUR
@@ -191,11 +256,11 @@ class ReliefPainter {
         setFloatUniform("light", light.x, light.y, light.z)
     }
 
-    private companion object {
-        const val MIN_BEVEL = 0.5f
-        const val AA_MARGIN = 1f
-        const val VELVET_RIM_STRENGTH = 0.55f
-        const val SHADOW_SOFTNESS = 0.9f
-        const val SHADOW_MIN_BLUR = 1f
-    }
 }
+
+
+private const val MIN_BEVEL = 0.5f
+private const val AA_MARGIN = 1f
+internal const val VELVET_RIM_STRENGTH = 0.55f
+internal const val SHADOW_SOFTNESS = 0.9f
+internal const val SHADOW_MIN_BLUR = 1f

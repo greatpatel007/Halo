@@ -149,7 +149,8 @@ val t = remember { mutableFloatStateOf(0f) }
 LaunchedEffect(Unit) { while (true) withFrameMillis { t.floatValue = it / 1000f } }
 Modifier.drawWithCache { val shader = RuntimeShader(SHIMMER); onDrawBehind { shader.setFloatUniform("t", t.floatValue); drawRect(ShaderBrush(shader)) } }
 ```
-When `motion.reduced` is on, draw a static `bg.raised` block instead.
+When `motion.reduced` is on, draw a static `bg.raised` block instead. Without shaders (`!HaloPlatform.shaders`,
+Android 8–12) sweep a `Brush.linearGradient` band across instead, driven by the same `t`.
 
 ## 14. Screen-level shared elements (features, not the design system)
 Use `SharedTransitionLayout` with `Modifier.sharedElement(rememberSharedContentState(key), animatedVisibilityScope,

@@ -2,6 +2,7 @@ package com.halo.wallet.navigation
 
 import android.content.Intent
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleOut
@@ -10,7 +11,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.core.util.Consumer
 import androidx.navigation.NavHostController
@@ -75,7 +75,7 @@ fun HaloNavHost(
  */
 @Composable
 private fun HandleNewIntents(navController: NavHostController) {
-    val activity = LocalContext.current as? ComponentActivity ?: return
+    val activity = LocalActivity.current as? ComponentActivity ?: return
     DisposableEffect(activity, navController) {
         val listener = Consumer<Intent> { intent ->
             val uri = intent.data ?: return@Consumer

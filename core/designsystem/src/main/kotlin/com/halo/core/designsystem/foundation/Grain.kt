@@ -1,12 +1,21 @@
 package com.halo.core.designsystem.foundation
 
+import android.graphics.Bitmap
 import android.graphics.RuntimeShader
+import android.os.Build
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.CacheDrawModifierNode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.node.DelegatingNode
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
+import com.halo.core.designsystem.runtime.HaloPlatform
+import kotlin.math.abs
+import kotlin.random.Random
 
 /**
  * Per-pixel film grain (AGSL). Breaks up banding in large dark gradients and gives hero surfaces a
@@ -44,16 +53,22 @@ private data class GrainElement(val intensity: Float, val seed: Float) : Modifie
 }
 
 /**
- * Compiles the shader once per element. Recomposing with the same values keeps the cached draw; new values only
- * update the uniforms.
+ * Compiles the shader once per element (Android 13+); older phones tile a pre-computed grain bitmap, which looks the
+ * same at one grain per pixel. Recomposing with the same values keeps the cached draw; new values only update the
+ * uniforms.
  */
 private class GrainNode(private var intensity: Float, private var seed: Float) : DelegatingNode() {
-    private val shader = RuntimeShader(GRAIN_AGSL)
-    private val brush = ShaderBrush(shader)
+    private val shader = if (HaloPlatform.shaders) RuntimeShader(GRAIN_AGSL) else null
+    private val shaderBrush = shader?.let(::ShaderBrush)
     private val draw = delegate(
         CacheDrawModifierNode {
-            shader.setFloatUniform("intensity", intensity)
-            shader.setFloatUniform("seed", seed)
+            val brush = if (shader != null && shaderBrush != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                shader.setFloatUniform("intensity", intensity)
+                shader.setFloatUniform("seed", seed)
+                shaderBrush
+            } else {
+                GrainTile.brush(intensity, seed)
+            }
             onDrawWithContent {
                 drawContent()
                 drawRect(brush)
@@ -67,4 +82,24 @@ private class GrainNode(private var intensity: Float, private var seed: Float) :
         this.seed = seed
         draw.invalidateDrawCache()
     }
+}
+
+/** The fallback grain: a repeating tile of per-pixel noise, built once per (intensity, seed) and shared. */
+private object GrainTile {
+    private const val SIZE = 128
+    private val cache = HashMap<Pair<Float, Float>, Brush>()
+
+    fun brush(intensity: Float, seed: Float): Brush = cache.getOrPut(intensity to seed) {
+        val random = Random(seed.toBits())
+        val pixels = IntArray(SIZE * SIZE) {
+            val n = random.nextFloat() - 0.5f
+            val alpha = (abs(n) * 2f * intensity * CHANNEL_MAX).toInt().coerceIn(0, CHANNEL_MAX.toInt())
+            val tone = if (n > 0f) CHANNEL_MAX.toInt() else 0
+            (alpha shl 24) or (tone shl 16) or (tone shl 8) or tone
+        }
+        val bitmap = Bitmap.createBitmap(pixels, SIZE, SIZE, Bitmap.Config.ARGB_8888)
+        ShaderBrush(ImageShader(bitmap.asImageBitmap(), TileMode.Repeated, TileMode.Repeated))
+    }
+
+    private const val CHANNEL_MAX = 255f
 }

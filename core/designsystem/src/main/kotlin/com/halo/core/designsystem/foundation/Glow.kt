@@ -3,6 +3,7 @@ package com.halo.core.designsystem.foundation
 import android.graphics.BlurMaskFilter
 import android.graphics.ColorSpace
 import android.graphics.Paint
+import android.os.Build
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.CacheDrawModifierNode
 import androidx.compose.ui.geometry.Size
@@ -11,7 +12,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
@@ -70,15 +73,29 @@ private class GlowNode(
         CacheDrawModifierNode {
             val blurPx = radius.toPx()
             val spreadPx = spread.toPx()
-            paint.maskFilter = if (blurPx > 0f) BlurMaskFilter(blurPx, BlurMaskFilter.Blur.NORMAL) else null
+            // Hardware-accelerated canvases honour mask filters from Android 9; below that the blur is drawn as
+            // stacked, growing outlines whose alpha sums to the glow's (a stepped Gaussian).
+            val maskBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+            paint.maskFilter = if (blurPx > 0f && maskBlur) BlurMaskFilter(blurPx, BlurMaskFilter.Blur.NORMAL) else null
             val grown = Size(size.width + spreadPx * 2f, size.height + spreadPx * 2f)
             onDrawBehind {
                 val a = intensity().coerceIn(0f, 1f)
-                if (a > 0f) {
+                if (a > 0f && !maskBlur && blurPx > 0f) {
+                    for (i in 1..STEPPED_LAYERS) {
+                        val grow = blurPx * (i.toFloat() / STEPPED_LAYERS - 0.5f)
+                        val layer = Size(grown.width + grow * 2f, grown.height + grow * 2f)
+                        translate(-spreadPx - grow, -spreadPx - grow) {
+                            drawOutline(
+                                shape.createOutline(layer, layoutDirection, this),
+                                color.copy(alpha = color.alpha * a / STEPPED_LAYERS),
+                            )
+                        }
+                    }
+                } else if (a > 0f) {
                     path.reset()
                     path.addOutline(shape.createOutline(grown, layoutDirection, this))
                     val gain = currentValueOf(LocalHaloHdr).emission
-                    if (gain > 1f) {
+                    if (gain > 1f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         // Extended range: the glow's colour scaled past SDR white by the display's headroom.
                         paint.setColor(
                             android.graphics.Color.pack(color.red * gain, color.green * gain, color.blue * gain, color.alpha * a, EXTENDED_SRGB),
@@ -114,3 +131,6 @@ private class GlowNode(
 }
 
 private val EXTENDED_SRGB: ColorSpace = ColorSpace.get(ColorSpace.Named.EXTENDED_SRGB)
+
+/** Layers of the stepped blur used where mask filters aren't hardware-accelerated (Android 8). */
+private const val STEPPED_LAYERS = 8

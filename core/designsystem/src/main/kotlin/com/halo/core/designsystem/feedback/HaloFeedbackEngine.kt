@@ -1,6 +1,8 @@
 package com.halo.core.designsystem.feedback
 
 import android.content.Context
+import android.os.Build
+import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.View
 import androidx.compose.runtime.getValue
@@ -16,7 +18,13 @@ import com.halo.core.designsystem.theme.HaloHaptic
  */
 internal class HaloFeedbackEngine private constructor(context: Context) {
 
-    private val haptics = HapticPlayer(context.getSystemService(VibratorManager::class.java)?.defaultVibrator)
+    private val haptics = HapticPlayer(
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(VibratorManager::class.java)?.defaultVibrator
+        } else {
+            context.getSystemService(Vibrator::class.java)
+        },
+    )
     private val sound = SoundEngine(context)
 
     val capabilities: HapticCapabilities get() = haptics.capabilities

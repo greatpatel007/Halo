@@ -1,5 +1,6 @@
 package com.halo.core.designsystem.foundation
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.Animatable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Measurable
@@ -38,6 +39,8 @@ private class EnterRiseNode(private val index: Int) :
 
     private val progress = Animatable(0f)
 
+    // A one-shot entrance: the motion tokens at the moment the element appears are the right ones.
+    @SuppressLint("SuspiciousCompositionLocalModifierRead")
     override fun onAttach() {
         val motion = currentValueOf(LocalHaloMotion)
         coroutineScope.launch {

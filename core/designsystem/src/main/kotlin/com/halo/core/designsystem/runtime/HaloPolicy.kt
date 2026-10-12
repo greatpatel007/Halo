@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.database.ContentObserver
 import android.media.AudioManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
@@ -15,6 +16,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 
 /*
  * The Halo runtime: system-like services behind HaloTheme, so components never re-implement the nitty-gritty
@@ -123,15 +125,20 @@ internal class PolicyWatcher(context: Context, private val policy: HaloPolicy) {
             policy.powerSave = power?.isPowerSaveMode == true
         }
     }
-    private val thermalListener = PowerManager.OnThermalStatusChangedListener { status ->
-        policy.hot = status >= PowerManager.THERMAL_STATUS_SEVERE
+    // Thermal status is reported from Android 10; older phones never count as hot (battery saver still applies).
+    private val thermalListener: Any? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        PowerManager.OnThermalStatusChangedListener { status -> policy.hot = status >= PowerManager.THERMAL_STATUS_SEVERE }
+    } else {
+        null
     }
 
     fun start() {
         policy.powerSave = power?.isPowerSaveMode == true
-        policy.hot = (power?.currentThermalStatus ?: PowerManager.THERMAL_STATUS_NONE) >= PowerManager.THERMAL_STATUS_SEVERE
         app.registerReceiver(saverReceiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
-        power?.addThermalStatusListener(app.mainExecutor, thermalListener)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && thermalListener is PowerManager.OnThermalStatusChangedListener) {
+            policy.hot = (power?.currentThermalStatus ?: PowerManager.THERMAL_STATUS_NONE) >= PowerManager.THERMAL_STATUS_SEVERE
+            power?.addThermalStatusListener(ContextCompat.getMainExecutor(app), thermalListener)
+        }
         readSound()
         app.registerReceiver(ringerReceiver, IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION))
         app.contentResolver.registerContentObserver(Settings.System.getUriFor(Settings.System.SOUND_EFFECTS_ENABLED), false, touchSoundsObserver)
@@ -139,7 +146,9 @@ internal class PolicyWatcher(context: Context, private val policy: HaloPolicy) {
 
     fun stop() {
         app.unregisterReceiver(saverReceiver)
-        power?.removeThermalStatusListener(thermalListener)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && thermalListener is PowerManager.OnThermalStatusChangedListener) {
+            power?.removeThermalStatusListener(thermalListener)
+        }
         app.unregisterReceiver(ringerReceiver)
         app.contentResolver.unregisterContentObserver(touchSoundsObserver)
     }

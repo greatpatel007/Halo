@@ -12,8 +12,11 @@ import org.gradle.kotlin.dsl.getByType
 object HaloBuild {
     const val COMPILE_SDK = 37
     const val TARGET_SDK = 37
-    /** 33 = Android 13: guarantees AGSL RuntimeShader, RenderEffect and haptic compositions. */
-    const val MIN_SDK = 33
+    /**
+     * 26 = Android 8. AGSL shaders (33), RenderEffect (31), haptic primitives (30) and envelopes (36) are used where the
+     * phone has them, with designed fallbacks below (proposal 0004 step 2).
+     */
+    const val MIN_SDK = 26
     val JAVA = JavaVersion.VERSION_17
 }
 

@@ -41,14 +41,21 @@ Halo looks bespoke but must *behave* like the best first-party Android apps.
 - Use `Modifier.Node` (not `composed {}`) for reusable modifiers with state.
 - Use stable parameters: `@Immutable`/`@Stable` classes, lambdas remembered when passed through.
 
-## Platform APIs available (minSdk 33)
-- `RuntimeShader` (AGSL) and `RenderEffect` blur
-- haptic compositions
-- predictive back
-- themed icons
-- per-app language
-- splash screen API
-- `BlurMaskFilter` (hardware)
+## Platform APIs by version (minSdk 26, proposal 0004)
+Everything newer than Android 8 is used where the phone has it, with a designed fallback below:
+
+| API | From | Below that |
+|---|---|---|
+| `RuntimeShader` (AGSL) | 13 | canvas fallback (`HaloPlatform.shaders`): gradients, bitmap grain, crossfade |
+| `RenderEffect` blur | 12 | frosted fill (`HaloPlatform.blur`) |
+| haptic primitives / envelopes | 12 / 16 | amplitude waveform, platform effects |
+| `VibrationAttributes` | 13 | sonification `AudioAttributes` |
+| thermal status | 10 | never "hot" (battery saver still applies) |
+| `BlurMaskFilter` (hardware) | 9 | stacked outlines (`haloGlow`) |
+| per-app night mode | 12 | Compose palette only |
+| HDR headroom | 14/15 | standard range |
+
+Debug: `?legacy=1` / `halo.py shot <id> --legacy` renders as Android 8–12 on any phone.
 
 
 ## Hardware: haptics, sound, sensors, HDR

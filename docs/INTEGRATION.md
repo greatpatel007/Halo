@@ -3,8 +3,7 @@
 Halo is a native Jetpack Compose design system. It brings components, motion, scene lighting, haptics and sound, and
 the Tide theme transition. You bring your brand colours and fonts, and you wrap your app in one call.
 
-> **Status (proposal 0004):** step 1 is done (brand + one-call host). Still to come:
-> - Android 8+ support (today: **Android 13+**, `minSdk 33`)
+> **Status (proposal 0004):** steps 1–2 are done (brand, one-call host, Android 8+). Still to come:
 > - a published library (today: include the module from source, see [Install](#1-install))
 > - a minimal sample app
 >
@@ -13,7 +12,7 @@ the Tide theme transition. You bring your brand colours and fonts, and you wrap 
 ## 1. Install
 
 **Requirements:**
-- A Compose app with `minSdk 33` and `compileSdk 37`
+- A Compose app with `minSdk 26` (Android 8) or higher, and `compileSdk 37`
 - Kotlin 2.x and the Compose compiler plugin
 
 **Today (from source):**
@@ -184,6 +183,21 @@ ringer and touch-sound settings. A user's in-app haptics/sound switches and stre
 **Light and haptics:**
 - The key light is world-fixed: tilt the phone and highlights move together.
 - Haptics adapt to the phone: four tiers, from rich envelopes down to basic buzzes.
+
+**Every phone from Android 8:** the full look runs on Android 13+. Older phones get designed fallbacks with the same
+light, colour and shape:
+
+| Effect | Android 13+ | Older |
+|---|---|---|
+| Lit surfaces | per-pixel AGSL lighting | gradient bevels, recess walls, soft contact shadows |
+| Glass blur | real blur (12+) | frosted fill |
+| Grain | AGSL noise | tiled noise bitmap |
+| Logo | glass shader with refraction | canvas ring with the liquid still circulating |
+| Theme switch | Tide wave | crossfade |
+| Haptics | envelopes (16+), primitives (12+) | amplitude waveforms and platform effects |
+
+Preview the older look on any phone with the `?legacy=1` deep-link parameter (Showroom), or
+`halo.py shot <page> --legacy`.
 
 **Debugging:** Showroom → Foundations → Runtime shows everything live.
 

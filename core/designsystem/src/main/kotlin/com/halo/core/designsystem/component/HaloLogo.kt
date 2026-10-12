@@ -1,6 +1,7 @@
 package com.halo.core.designsystem.component
 
 import android.graphics.RuntimeShader
+import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +37,9 @@ import androidx.compose.ui.unit.Dp
 import com.halo.core.designsystem.foundation.HaloPreview
 import com.halo.core.designsystem.foundation.HaloPressable
 import com.halo.core.designsystem.foundation.material.SDF_COMMON
+import com.halo.core.designsystem.foundation.material.drawCanvasHalo
 import com.halo.core.designsystem.foundation.rememberPressProgress
+import com.halo.core.designsystem.runtime.HaloPlatform
 import com.halo.core.designsystem.runtime.HaloSensor
 import com.halo.core.designsystem.runtime.rememberAmbient
 import com.halo.core.designsystem.theme.HaloHaptic
@@ -217,14 +220,21 @@ private fun LogoGlass(
     val glass = HaloTheme.materials.glass
     val emission = HaloTheme.colors.accent.fill
     val hdr = HaloTheme.hdr
-    val shader = remember { RuntimeShader(HALO_GLASS_AGSL) }
-    val brush = remember(shader) { ShaderBrush(shader) }
+    // Android 13+: the full glass shader. Older phones draw the same ring on the canvas (see drawCanvasHalo).
+    val shader = remember { if (HaloPlatform.shaders) RuntimeShader(HALO_GLASS_AGSL) else null }
+    val brush = remember(shader) {
+        if (shader != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) ShaderBrush(shader) else null
+    }
     Spacer(
         modifier
             .size(logoBox(size))
             .drawBehind {
                 val w = this.size.minDimension
                 val tube = w * TUBE_RADIUS
+                if (shader == null || brush == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    drawCanvasHalo(w * RING_RADIUS, tube, light, glass, surfaceColor, emission, flowPhase(), glow())
+                    return@drawBehind
+                }
                 with(shader) {
                     setFloatUniform("center", this@drawBehind.size.width / 2f, this@drawBehind.size.height / 2f)
                     setFloatUniform("ringRadius", w * RING_RADIUS)

@@ -54,4 +54,4 @@ switch; plays as sonification at system volume; mixed in a low-latency `AudioTra
 ## Verifying
 - The emulator cannot vibrate (it does play sound). Every played token appears in the Showroom **haptic log** (dock → log), so you can
   verify *which* token fires *when*. Report the timing you observed.
-- How a haptic feels needs a physical Android 13+ device. List that as unverified in the report unless the user confirms.
+- How a haptic feels needs a physical device (primitives need Android 12+; older phones get amplitude waveforms). List that as unverified in the report unless the user confirms.

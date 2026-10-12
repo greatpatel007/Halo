@@ -109,6 +109,12 @@ one policy, one frame clock, one sensor hub, the scene and the feedback engine f
 16. **Respect conserving power.** Long decorative feedback and emission need a short/plain form for
     `runtime.policy.conserving` (battery saver or heat): the Tide plays only its launch, HDR returns to standard
     range. Discrete feedback for a user action always plays.
+17. **Every phone from Android 8 gets a designed look (proposal 0004).** AGSL needs Android 13 and RenderEffect
+    Android 12. Create a shader only when `HaloPlatform.shaders` (blur: `HaloPlatform.blur`) and draw a canvas
+    fallback otherwise that keeps the same light, colour and shape: gradients for relief (`ReliefPainter` already does
+    it), a tiled bitmap for noise, a frosted fill instead of a blur, a crossfade instead of a shader transition. Gate any
+    newer platform call with `Build.VERSION.SDK_INT` (Android Lint `NewApi` must stay clean). Check it with
+    `halo.py shot <id> --legacy` in both themes.
 
 ## Runtime quick reference
 ```kotlin
@@ -211,7 +217,9 @@ python3 -I .claude/skills/halo-component/scripts/halo.py shot <id>
 6. Light: with a simulated tilt (`adb emu sensor set acceleration 6.5:7.3:0.81`, capture within ~0.6 s, reset to
    `0:9.77:0.81`) highlights and shadows move with no layout change.
 7. Continuous motion: report the frame counts (non-negotiable 13), and check the Runtime lab (steps/s, sensors).
-8. Fix, then repeat. Report the result honestly: anything not verified (how a haptic feels on a real actuator,
+8. Older phones: `halo.py shot <id> --legacy` (no shaders, no blur) in dark and light; it must still read as the same
+   component. `halo.py gradle :core:designsystem:lintDebug` reports no `NewApi`.
+9. Fix, then repeat. Report the result honestly: anything not verified (how a haptic feels on a real actuator,
    HDR on an HDR screen, 120 Hz feel) is listed as unverified.
 
 **Capturing interaction and motion states.** These are proven recipes; don't improvise coordinates or timing.

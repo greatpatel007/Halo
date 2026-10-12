@@ -8,6 +8,7 @@ import android.graphics.BitmapShader
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.graphics.Shader
+import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.layout.Box
@@ -52,6 +53,7 @@ import androidx.core.view.WindowCompat
 import com.halo.core.designsystem.feedback.HaloFeedbackEngine
 import com.halo.core.designsystem.feedback.TideTrajectory
 import com.halo.core.designsystem.foundation.material.TIDE_AGSL
+import com.halo.core.designsystem.runtime.HaloPlatform
 import com.halo.core.designsystem.theme.HaloHaptics
 import com.halo.core.designsystem.theme.HaloMotion
 import com.halo.core.designsystem.theme.HaloSpring
@@ -308,7 +310,8 @@ fun HaloThemeRevealHost(
     val layer = rememberGraphicsLayer()
     val fx = rememberGraphicsLayer()
     val state = remember(layer) { HaloThemeRevealState(layer) }
-    val shader = remember { runCatching { RuntimeShader(TIDE_AGSL) }.getOrNull() }
+    // Android 13+ only; older phones (and a shader that fails to compile) get the crossfade.
+    val shader = remember { if (HaloPlatform.shaders) runCatching { RuntimeShader(TIDE_AGSL) }.getOrNull() else null }
     val effects = HaloTheme.effects
     val haptics = HaloTheme.haptics
     val foam = HaloTheme.light.highlight.toArgb()
@@ -363,7 +366,7 @@ fun HaloThemeRevealHost(
                     val liveIsBehind = state.isDark == state.behindDark
                     val frozen = if (liveIsBehind) state.aheadFrame else state.behindFrame
                     val tide = state.active && frozen != null
-                    if (shader != null && (tide || warming)) {
+                    if (shader != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && (tide || warming)) {
                         // The meander grows in over the first band of travel, so the wave is born at the trigger.
                         val grow = if (tide) ((state.front - state.start) / band).coerceIn(0f, 1f) else 0f
                         with(shader) {

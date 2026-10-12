@@ -175,9 +175,12 @@ def cmd_shot(args: argparse.Namespace) -> None:
         if run_gradle([":app:assembleDebug", "--console=plain", "-q"]) != 0:
             die("Build failed")
         adb("install", "-r", "-d", str(ROOT / "app/build/outputs/apk/debug/app-debug.apk"))
+    else:
+        # Start clean either way: a running app routes the link in place and keeps process-wide debug state.
+        adb("shell", "am", "force-stop", PACKAGE, check=False)
 
     # 3. Open the page (+ debug dock parameters) and let enter choreography settle.
-    query = f"?slowmo={args.slowmo:g}&grid={args.grid}&rm={1 if args.reduced else 0}"
+    query = f"?slowmo={args.slowmo:g}&grid={args.grid}&rm={1 if args.reduced else 0}&legacy={1 if args.legacy else 0}"
     if args.theme:
         query += f"&theme={args.theme}"
     # Single-quoted so the device shell doesn't treat '&' as a separator.
@@ -331,6 +334,7 @@ def main() -> None:
     p.add_argument("--slowmo", type=float, default=1)
     p.add_argument("--grid", type=int, choices=(0, 4, 8), default=0)
     p.add_argument("--reduced", action="store_true", help="reduced motion")
+    p.add_argument("--legacy", action="store_true", help="render as Android 8-12 (no shaders, no blur)")
     p.add_argument("--theme", choices=("dark", "light", "system"))
     p.add_argument("--avd", default=os.environ.get("HALO_AVD", "Pixel_10_Pro"))
     p.set_defaults(func=cmd_shot)

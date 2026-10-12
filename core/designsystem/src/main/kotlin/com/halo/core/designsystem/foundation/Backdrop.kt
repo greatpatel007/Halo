@@ -23,12 +23,16 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.GlobalPositionAwareModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.requireGraphicsContext
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Dp
+import com.halo.core.designsystem.runtime.HaloPlatform
+import com.halo.core.designsystem.theme.LocalHaloColors
 
 /**
  * Hand-built backdrop blur (no third-party libraries). The [backdropSource] records its content into a
@@ -81,7 +85,7 @@ private class BackdropGlassNode(
     var backdrop: HaloBackdrop,
     var shape: Shape,
     var blurRadius: Dp,
-) : Modifier.Node(), DrawModifierNode, GlobalPositionAwareModifierNode {
+) : Modifier.Node(), DrawModifierNode, GlobalPositionAwareModifierNode, CompositionLocalConsumerModifierNode {
 
     private var layer: GraphicsLayer? = null
     private var position by mutableStateOf(Offset.Zero)
@@ -105,7 +109,13 @@ private class BackdropGlassNode(
 
     override fun ContentDrawScope.draw() {
         val glass = layer
-        if (glass != null) {
+        if (!HaloPlatform.blur) {
+            // No blur below Android 12: the content would show through sharp. Frost the glass instead (Apple's
+            // "Reduce transparency" does the same): the raised surface, nearly opaque, under the glass tint.
+            clip.reset()
+            clip.addOutline(shape.createOutline(size, layoutDirection, this))
+            drawPath(clip, currentValueOf(LocalHaloColors).bg.raised.copy(alpha = FROST_ALPHA))
+        } else if (glass != null) {
             val delta = backdrop.sourcePosition - position
             val radius = blurRadius.toPx()
             if (radius != blurPx) {
@@ -123,3 +133,6 @@ private class BackdropGlassNode(
         drawContent()
     }
 }
+
+/** Opacity of the frosted fill that stands in for the blur on phones without RenderEffect. */
+private const val FROST_ALPHA = 0.94f

@@ -59,6 +59,9 @@ default location) by itself. Never put machine-specific paths in `gradle.propert
 - Apps enter through `HaloApp(brand, appearance) { }` (proposal 0004): brand = palettes + fonts (`haloBrand(accent)`
   derives roles in OKLCH with AA contrast); the appearance store belongs to the host. Never hard-code Halo's lime
   where a role (`colors.accent`) is meant: other apps re-brand it. Plug-in guide: `docs/INTEGRATION.md`.
+- minSdk 26: shaders only when `HaloPlatform.shaders` (Android 13+), blur when `HaloPlatform.blur` (12+), each with a
+  designed canvas fallback; newer platform calls are gated by `SDK_INT` (Android Lint `NewApi` stays clean). Check
+  with `halo.py shot <id> --legacy`.
 - Components reach the system only through `HaloTheme.runtime` (proposal 0003): continuous motion via
   `rememberAmbient`, sensors via `runtime.sensors`, power/thermal/lifecycle via `runtime.policy`. Never register sensors,
   read lifecycle/power/thermal state or write a frame loop in a component. Live view: Showroom → Foundations → Runtime.
@@ -67,5 +70,5 @@ default location) by itself. Never put machine-specific paths in `gradle.propert
 - Tokens and design rules: `.claude/skills/halo-component/references/` (tokens, motion recipes, haptics,
   archetypes, pixel-perfect, native Android, anti-patterns, architecture).
 - Components: `docs/components/REGISTRY.md` and one spec per component.
-- Proposals: `docs/proposals/`. In progress: 0004 (portable design system, step 2 next: Android 8+ fallbacks). Then 0001.
+- Proposals: `docs/proposals/`. In progress: 0004 (portable design system, step 3 next: library packaging). Then 0001.
 - Adding Halo to another app: `docs/INTEGRATION.md`.
