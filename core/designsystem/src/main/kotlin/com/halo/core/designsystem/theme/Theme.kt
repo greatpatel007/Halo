@@ -43,6 +43,9 @@ val LocalHaloContentColor = compositionLocalOf { Color.Unspecified }
 object HaloTheme {
     val colors: HaloColors
         @Composable @ReadOnlyComposable get() = LocalHaloColors.current
+    /** Material 3 colour roles + Halo's families (proposal 0006). Migrated components read these, not [colors]. */
+    val scheme: HaloScheme
+        @Composable @ReadOnlyComposable get() = LocalHaloColors.current.scheme
     val typography: HaloTypography
         @Composable @ReadOnlyComposable get() = LocalHaloTypography.current
     val spacing: HaloSpacing

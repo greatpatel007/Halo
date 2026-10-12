@@ -439,7 +439,7 @@ internal fun GlassKey(label: String, icon: ImageVector) {
             HaloIcon(icon, contentDescription = null, modifier = Modifier.wrapContentSize(), size = HaloTheme.sizes.iconMd, tint = accent.text)
         }
         Spacer(Modifier.height(HaloTheme.spacing.sm))
-        HaloText(label, style = HaloTheme.typography.bodySmall, color = HaloTheme.colors.content.secondary)
+        HaloText(label, style = HaloTheme.typography.bodyMedium, color = HaloTheme.colors.content.secondary)
     }
 }
 

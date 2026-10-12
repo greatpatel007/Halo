@@ -68,7 +68,7 @@ internal fun MotionPage() {
     ShowroomCard(Modifier.enterRise(9)) {
         HaloText(
             "Rise ${HaloTheme.motion.enterRise.value.toInt()}dp + fade on Gentle, ${HaloMotion.STAGGER_STEP_MS}ms per item, capped at ${HaloMotion.STAGGER_CAP}.",
-            style = HaloTheme.typography.bodySmall,
+            style = HaloTheme.typography.bodyMedium,
             color = HaloTheme.colors.content.secondary,
         )
         Spacer(Modifier.height(s.lg))

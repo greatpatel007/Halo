@@ -14,6 +14,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import com.halo.feature.showroom.ui.Knob
+import com.halo.core.designsystem.theme.haloScheme
+import com.halo.core.designsystem.theme.HaloContrast
+import com.halo.core.designsystem.theme.HaloColorFamily
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,51 +42,62 @@ internal class Swatch(val name: String, val color: Color, val showContrast: Bool
 
 @Composable
 internal fun ColorPage() {
-    val c = HaloTheme.colors
+    // Material 3 roles (proposal 0006), previewable at each contrast level.
+    var level by rememberSaveable { mutableStateOf(HaloContrast.Standard) }
+    val dark = HaloTheme.colors.isDark
+    val scheme = remember(dark, level) { haloScheme(dark, level) }
     val groups = listOf(
-        "Background" to listOf(
-            Swatch("bg.canvas", c.bg.canvas), Swatch("bg.surface", c.bg.surface),
-            Swatch("bg.raised", c.bg.raised), Swatch("bg.glass", c.bg.glass), Swatch("bg.scrim", c.bg.scrim),
+        "Surfaces" to listOf(
+            Swatch("surface", scheme.surface), Swatch("surfaceDim", scheme.surfaceDim), Swatch("surfaceBright", scheme.surfaceBright),
+            Swatch("surfaceContainerLowest", scheme.surfaceContainerLowest), Swatch("surfaceContainerLow", scheme.surfaceContainerLow),
+            Swatch("surfaceContainer", scheme.surfaceContainer), Swatch("surfaceContainerHigh", scheme.surfaceContainerHigh),
+            Swatch("surfaceContainerHighest", scheme.surfaceContainerHighest),
         ),
-        "Content" to listOf(
-            Swatch("content.primary", c.content.primary, true), Swatch("content.secondary", c.content.secondary, true),
-            Swatch("content.tertiary", c.content.tertiary, true), Swatch("content.disabled", c.content.disabled, true),
+        "On surface · outlines" to listOf(
+            Swatch("onSurface", scheme.onSurface, true), Swatch("onSurfaceVariant", scheme.onSurfaceVariant, true),
+            Swatch("outline", scheme.outline, true), Swatch("outlineVariant", scheme.outlineVariant),
         ),
-        "Line" to listOf(
-            Swatch("line.subtle", c.line.subtle), Swatch("line.default", c.line.default),
-            Swatch("line.strong", c.line.strong), Swatch("line.focus", c.line.focus), Swatch("line.highlight", c.line.highlight),
-        ),
-        "Accent · blue" to accentSwatches("accent", c.accent),
-        "Bitcoin · on-chain only" to accentSwatches("bitcoin", c.bitcoin),
-        "Lightning · yellow" to accentSwatches("lightning", c.lightning),
-        "Status" to listOf(
-            Swatch("status.positive", c.status.positive, true), Swatch("status.positiveTint", c.status.positiveTint),
-            Swatch("status.negative", c.status.negative, true), Swatch("status.negativeTint", c.status.negativeTint),
-            Swatch("status.warning", c.status.warning, true), Swatch("status.warningTint", c.status.warningTint),
+        "Primary · brand blue (container = the brand seed)" to familySwatches("primary", scheme.primary),
+        "Secondary · quiet UI" to familySwatches("secondary", scheme.secondary),
+        "Tertiary" to familySwatches("tertiary", scheme.tertiary),
+        "Error" to familySwatches("error", scheme.error),
+        "Bitcoin · on-chain only (fill = seed)" to familySwatches("bitcoin", scheme.bitcoin),
+        "Lightning · Lightning only (fill = seed)" to familySwatches("lightning", scheme.lightning),
+        "Positive" to familySwatches("positive", scheme.positive),
+        "Warning · coral" to familySwatches("warning", scheme.warning),
+        "Inverse · scrim" to listOf(
+            Swatch("inverseSurface", scheme.inverseSurface), Swatch("inverseOnSurface", scheme.inverseOnSurface),
+            Swatch("inversePrimary", scheme.inversePrimary), Swatch("scrim", scheme.scrim),
         ),
     )
     var index = 0
+    SectionLabel("Contrast level", Modifier.enterRise(index++))
+    ShowroomCard(Modifier.enterRise(index++)) {
+        Knob("Android 14+ contrast setting", HaloContrast.entries, level, { level = it }, optionLabel = { it.name.lowercase() })
+    }
     groups.forEach { (title, swatches) ->
         SectionLabel(title, Modifier.enterRise(index++))
         ShowroomCard(Modifier.enterRise(index++)) {
             Column(verticalArrangement = Arrangement.spacedBy(HaloTheme.spacing.md)) {
-                swatches.forEach { SwatchRow(it, c.bg.canvas) }
+                swatches.forEach { SwatchRow(it, scheme.surface) }
             }
         }
     }
 
-    SectionLabel("Primitive ramps", Modifier.enterRise(index++))
+    SectionLabel("Primitive ramps (materials, logo)", Modifier.enterRise(index++))
     Ramp("ink", listOf(
         HaloPalette.Ink950, HaloPalette.Ink900, HaloPalette.Ink850, HaloPalette.Ink800, HaloPalette.Ink700, HaloPalette.Ink600,
         HaloPalette.Ink500, HaloPalette.Ink400, HaloPalette.Ink300, HaloPalette.Ink200, HaloPalette.Ink100,
     ), Modifier.enterRise(index++))
     Spacer(Modifier.height(HaloTheme.spacing.md))
-    Ramp("blue", listOf(HaloPalette.Blue900, HaloPalette.Blue700, HaloPalette.Blue600, HaloPalette.Blue500, HaloPalette.Blue400, HaloPalette.Blue050), Modifier.enterRise(index++))
-    Spacer(Modifier.height(HaloTheme.spacing.md))
-    Ramp("yellow", listOf(HaloPalette.Yellow900, HaloPalette.Yellow800, HaloPalette.Yellow600, HaloPalette.Yellow500, HaloPalette.YellowBrand, HaloPalette.Yellow400, HaloPalette.Yellow050), Modifier.enterRise(index++))
-    Spacer(Modifier.height(HaloTheme.spacing.md))
-    Ramp("btc", listOf(HaloPalette.Btc900, HaloPalette.Btc600, HaloPalette.Btc500, HaloPalette.Btc400, HaloPalette.Btc300), Modifier.enterRise(index))
+    Ramp("seeds", listOf(HaloPalette.Blue500, HaloPalette.Btc500, HaloPalette.Yellow500, HaloPalette.Green500, HaloPalette.Red500, HaloPalette.Coral500), Modifier.enterRise(index))
 }
+
+internal fun familySwatches(prefix: String, f: HaloColorFamily) = listOf(
+    Swatch(prefix, f.color, true), Swatch("on${prefix.replaceFirstChar { it.uppercase() }}", f.onColor),
+    Swatch("${prefix}Container", f.container), Swatch("on${prefix.replaceFirstChar { it.uppercase() }}Container", f.onContainer),
+    Swatch("$prefix.fill (lit control)", f.fill),
+)
 
 internal fun accentSwatches(prefix: String, a: HaloAccentColors) = listOf(
     Swatch("$prefix.fill", a.fill), Swatch("$prefix.fillPressed", a.fillPressed),

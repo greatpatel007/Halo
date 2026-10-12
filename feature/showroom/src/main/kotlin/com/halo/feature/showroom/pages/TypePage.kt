@@ -37,29 +37,40 @@ internal fun TypePage() {
     val t = HaloTheme.typography
     var preview by rememberSaveable { mutableStateOf("") }
     var fontScale by rememberSaveable { mutableFloatStateOf(1f) }
+    // Material 3 type roles (androidx TypeScaleTokens) in Satoshi + Halo's numeric roles in Paper Mono (proposal 0006).
     val specs = listOf(
-        TypeSpec("amountHero", t.amountHero, "Paper Mono Light 48/52 −3%", "4 812 350"),
-        TypeSpec("amountLarge", t.amountLarge, "Paper Mono Regular 32/38 −2%", "0.04812350"),
-        TypeSpec("amountMedium", t.amountMedium, "Paper Mono Regular 20/24 −1%", "$5,016.34"),
-        TypeSpec("amountSmall", t.amountSmall, "Paper Mono Medium 15/20", "+21 000 sats"),
-        TypeSpec("headline", t.headline, "Satoshi Bold 26/32 −2%", "Send bitcoin"),
-        TypeSpec("title", t.title, "Satoshi Bold 20/26 −1%", "Review payment"),
-        TypeSpec("subtitle", t.subtitle, "Satoshi Medium 17/22 −0.5%", "Blue Bottle Café"),
-        TypeSpec("body", t.body, "Satoshi Regular 15/22", "Lightning payments settle in seconds and cost a fraction of a cent."),
-        TypeSpec("bodySmall", t.bodySmall, "Satoshi Regular 13/18", "Network fee is paid to miners, not to Halo."),
-        TypeSpec("label", t.label, "Satoshi Bold 15/20", "Continue"),
-        TypeSpec("overline", t.overline, "Paper Mono Medium 11/14 +8% CAPS", "RECENT ACTIVITY"),
+        TypeSpec("amountDisplay", t.amountDisplay, "Paper Mono Light 48/52 −3%", "4 812 350"),
+        TypeSpec("amountHeadline", t.amountHeadline, "Paper Mono Regular 32/38 −2%", "0.04812350"),
+        TypeSpec("amountTitle", t.amountTitle, "Paper Mono Regular 20/24 −1%", "$5,016.34"),
+        TypeSpec("amountBody", t.amountBody, "Paper Mono Medium 15/20", "+21 000 sats"),
+        TypeSpec("displayLarge", t.displayLarge, "Satoshi Regular 57/64 −0.25", "Halo"),
+        TypeSpec("displayMedium", t.displayMedium, "Satoshi Regular 45/52", "Halo"),
+        TypeSpec("displaySmall", t.displaySmall, "Satoshi Regular 36/44", "Welcome back"),
+        TypeSpec("headlineLarge", t.headlineLarge, "Satoshi Regular 32/40", "Send bitcoin"),
+        TypeSpec("headlineMedium", t.headlineMedium, "Satoshi Regular 28/36", "Send bitcoin"),
+        TypeSpec("headlineSmall", t.headlineSmall, "Satoshi Regular 24/32", "Review payment"),
+        TypeSpec("headlineSmallEmphasized", t.headlineSmallEmphasized, "Satoshi Medium 24/32", "Review payment"),
+        TypeSpec("titleLarge", t.titleLarge, "Satoshi Regular 22/28", "Activity"),
+        TypeSpec("titleMedium", t.titleMedium, "Satoshi Medium 16/24 +0.15", "Blue Bottle Café"),
+        TypeSpec("titleMediumEmphasized", t.titleMediumEmphasized, "Satoshi Bold 16/24 +0.15", "Blue Bottle Café"),
+        TypeSpec("titleSmall", t.titleSmall, "Satoshi Medium 14/20 +0.1", "Network fee"),
+        TypeSpec("bodyLarge", t.bodyLarge, "Satoshi Regular 16/24 +0.5", "Lightning payments settle in seconds and cost a fraction of a cent."),
+        TypeSpec("bodyMedium", t.bodyMedium, "Satoshi Regular 14/20 +0.25", "Network fee is paid to miners, not to Halo."),
+        TypeSpec("bodySmall", t.bodySmall, "Satoshi Regular 12/16 +0.4", "Rates update every minute."),
+        TypeSpec("labelLarge", t.labelLarge, "Satoshi Medium 14/20 +0.1", "Continue"),
+        TypeSpec("labelLargeEmphasized", t.labelLargeEmphasized, "Satoshi Bold 14/20 +0.1", "Send"),
+        TypeSpec("labelMedium", t.labelMedium, "Satoshi Medium 12/16 +0.5", "Home"),
+        TypeSpec("labelSmall", t.labelSmall, "Satoshi Medium 11/16 +0.5", "Pending"),
         TypeSpec("data", t.data, "Paper Mono Regular 13/18", "bc1qar0s…zwf5mdq · 14:02"),
-        TypeSpec("micro", t.micro, "Paper Mono SemiBold 10/12 +6%", "PENDING"),
     )
 
     SectionLabel("Families", Modifier.enterRise(0))
     ShowroomCard(Modifier.enterRise(1)) {
-        HaloText("Satoshi", style = t.headline)
-        HaloText("UI & body — variable 300–900, pinned to 400 / 500 / 700", style = t.bodySmall, color = HaloTheme.colors.content.secondary)
+        HaloText("Satoshi", style = t.headlineSmall)
+        HaloText("UI & body — variable 300–900, pinned to 400 / 500 / 700", style = t.bodyMedium, color = HaloTheme.colors.content.secondary)
         Spacer(Modifier.height(HaloTheme.spacing.lg))
-        HaloText("Paper Mono", style = t.amountLarge)
-        HaloText("Every number, amount, address and label — 8 static weights", style = t.bodySmall, color = HaloTheme.colors.content.secondary)
+        HaloText("Paper Mono", style = t.amountHeadline)
+        HaloText("Every number, amount, address and label — 8 static weights", style = t.bodyMedium, color = HaloTheme.colors.content.secondary)
     }
 
     SectionLabel("Try it", Modifier.enterRise(2))
@@ -98,7 +109,7 @@ internal fun TypePage() {
         Column(verticalArrangement = Arrangement.spacedBy(HaloTheme.spacing.sm)) {
             specs.forEachIndexed { i, spec ->
                 ShowroomCard(Modifier.enterRise(5 + i)) {
-                    HaloText(spec.token, style = t.micro, color = HaloTheme.colors.accent.text)
+                    HaloText(spec.token, style = t.labelMedium, color = HaloTheme.scheme.primary.color)
                     Spacer(Modifier.height(HaloTheme.spacing.md))
                     HaloText(
                         text = preview.ifBlank { spec.sample ?: spec.token },

@@ -101,7 +101,7 @@ internal fun SheetPage() {
                         .forEach { (k, v) -> SpecLine(k, v) }
                     HaloText(
                         "On-chain payments can't be reversed once they settle. Check the address before you send.",
-                        style = t.bodySmall,
+                        style = t.bodyMedium,
                         color = colors.content.secondary,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(s.sm), verticalAlignment = Alignment.CenterVertically) {

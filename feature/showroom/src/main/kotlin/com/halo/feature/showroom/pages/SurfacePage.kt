@@ -454,7 +454,7 @@ private fun ActionKey(label: String, icon: androidx.compose.ui.graphics.vector.I
             HaloIcon(icon, contentDescription = null, modifier = Modifier.wrapContentSize(), size = HaloTheme.sizes.iconMd, tint = HaloTheme.colors.accent.text)
         }
         Spacer(Modifier.height(HaloTheme.spacing.sm))
-        HaloText(label, style = HaloTheme.typography.bodySmall, color = HaloTheme.colors.content.secondary)
+        HaloText(label, style = HaloTheme.typography.bodyMedium, color = HaloTheme.colors.content.secondary)
     }
 }
 

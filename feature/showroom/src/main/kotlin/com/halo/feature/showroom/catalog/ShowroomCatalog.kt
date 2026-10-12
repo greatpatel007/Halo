@@ -39,8 +39,8 @@ class ShowroomPage(
 object ShowroomCatalog {
     val pages: List<ShowroomPage> = listOf(
         ShowroomPage("brand", "Brand", "One seed colour re-brands everything · plug-in proof", ShowroomSection.Foundations) { BrandPage() },
-        ShowroomPage("color", "Color", "Ink, blue, bitcoin, lightning, status — roles & contrast", ShowroomSection.Foundations) { ColorPage() },
-        ShowroomPage("type", "Typography", "Satoshi × Paper Mono, 13 styles", ShowroomSection.Foundations) { TypePage() },
+        ShowroomPage("color", "Color", "Material 3 roles from Halo seeds · contrast levels", ShowroomSection.Foundations) { ColorPage() },
+        ShowroomPage("type", "Typography", "Material 3 type roles · Satoshi × Paper Mono", ShowroomSection.Foundations) { TypePage() },
         ShowroomPage("spacing", "Space & shape", "4dp grid, radii, strokes", ShowroomSection.Foundations) { SpacingPage() },
         ShowroomPage("depth", "Depth & light", "Surfaces, glass, glow, grain", ShowroomSection.Foundations) { DepthPage() },
         ShowroomPage("surface", "Surface lab", "Proof · clean glass on a matte base · light as information", ShowroomSection.Foundations) { SurfacePage() },

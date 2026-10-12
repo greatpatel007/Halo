@@ -95,7 +95,7 @@ internal fun ShowroomHomeContent(
                 if (sectionPages.isEmpty()) {
                     HaloText(
                         text = "Nothing here yet — build one with /halo-component.",
-                        style = HaloTheme.typography.bodySmall,
+                        style = HaloTheme.typography.bodyMedium,
                         color = HaloTheme.colors.content.tertiary,
                         modifier = Modifier.enterRise(index++),
                     )
@@ -210,7 +210,7 @@ private fun PageRow(number: Int, page: ShowroomPage, onClick: () -> Unit, modifi
             Column(Modifier.weight(1f)) {
                 HaloText(page.title, style = HaloTheme.typography.subtitle)
                 Spacer(Modifier.height(spacing.xxs))
-                HaloText(page.summary, style = HaloTheme.typography.bodySmall, color = HaloTheme.colors.content.secondary, maxLines = 1)
+                HaloText(page.summary, style = HaloTheme.typography.bodyMedium, color = HaloTheme.colors.content.secondary, maxLines = 1)
             }
             Spacer(Modifier.width(spacing.sm))
             HaloIcon(HaloIcons.ChevronRight, contentDescription = null, size = HaloTheme.sizes.iconMd, tint = HaloTheme.colors.content.tertiary)

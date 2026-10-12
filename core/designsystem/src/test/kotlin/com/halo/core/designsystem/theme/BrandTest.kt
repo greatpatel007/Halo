@@ -28,11 +28,12 @@ class BrandTest {
 
     @Test
     fun hueIsKept() {
-        for (seed in seeds.filter { Oklch.of(it).c > 0.05f }) {
-            val h = Oklch.of(seed).h
+        // Material tones keep the seed's hue (OKLCH hue, blue-stable like HCT); only chroma shrinks to fit the gamut.
+        for (seed in seeds.filter { Tone.of(it).c > 0.05f }) {
+            val h = Tone.of(seed).h
             for (colors in listOf(haloBrand(seed).dark, haloBrand(seed).light)) {
-                val text = Oklch.of(colors.accent.text)
-                if (text.c > 0.03f) assertEquals("$seed", h, text.h, 0.12f)
+                val text = Tone.of(colors.accent.text)
+                if (text.c > 0.02f) assertEquals("$seed", h, text.h, 0.05f)
             }
         }
     }
@@ -48,12 +49,15 @@ class BrandTest {
     }
 
     @Test
-    fun onlyAccentFamiliesChange() {
-        val brand = haloBrand(accent = Color(0xFF1E3AFF))
+    fun rebrandKeepsTheSignalFamiliesAndTheSeed() {
+        // Material: neutrals carry the brand's hue, so the canvas may shift; signal families and the key action don't.
+        val seed = Color(0xFF1E3AFF)
+        val brand = haloBrand(accent = seed)
         val halo = haloDarkColors()
-        assertEquals(halo.bg.canvas, brand.dark.bg.canvas)
         assertEquals(halo.bitcoin.fill, brand.dark.bitcoin.fill)
-        assertEquals(brand.dark.accent.fill, brand.dark.line.focus)
+        assertEquals(halo.lightning.fill, brand.dark.lightning.fill)
+        assertEquals(seed, brand.dark.accent.fill)
+        assertEquals(brand.dark.scheme.primary.color, brand.dark.line.focus)
     }
 
     /**

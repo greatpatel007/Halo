@@ -1,6 +1,6 @@
 # Proposal 0006: Migrate the design system to Material 3 Expressive foundations
 
-**Status:** Accepted (2026-10-13; the four decisions below taken as recommended) · phase 1 in progress · **Depends on:** [0005 clean glass](0005-clean-glass.md) (its 2026-10-13 revision and
+**Status:** Accepted (2026-10-13; the four decisions below taken as recommended) · phase 1 done (2026-10-13), phase 2 next · **Depends on:** [0005 clean glass](0005-clean-glass.md) (its 2026-10-13 revision and
 Material section) · **Proof:** Showroom → Surface lab (`MaterialLab.kt`, `NativeLab.kt`, `SurfacePage.kt`)
 **Rule (owner, 2026-10-13):** Android's guides first, Apple fills the gaps, **motion follows Apple only**.
 

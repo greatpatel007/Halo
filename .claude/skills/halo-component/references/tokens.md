@@ -3,7 +3,22 @@
 Code is the source of truth: `core/designsystem/src/main/kotlin/com/halo/core/designsystem/theme/`. Keep this file in sync
 whenever a token is added. Access everything through `HaloTheme.*` inside composables.
 
-## Color: semantic roles (`HaloTheme.colors`)
+## Material 3 foundations (proposal 0006, phase 1 done)
+- **Colour:** `HaloTheme.scheme` = Material 3 roles at Material's exact tones (tone = CIELAB L*; hue/chroma OKLCH so
+  blues stay blue), generated from `HaloSeeds` by `haloScheme(dark, contrast)`: `primary/secondary/tertiary/error`
+  families (`color`, `onColor`, `container`, `onContainer`, + `fill/onFill` for lit controls), the surface ladder
+  (`surface`, `surfaceDim/Bright`, `surfaceContainerLowest…Highest`), `onSurface(Variant)`, `outline(Variant)`, inverses,
+  `scrim`. Halo extensions: `primary.container` = the brand seed (fidelity, the key action); `bitcoin`, `lightning`,
+  `positive`, `warning` families; network `fill` = the true seed. `HaloContrast` Standard / Medium / High.
+  **New code reads `HaloTheme.scheme`.** `HaloTheme.colors` below is now an alias layer derived from it.
+- **Type:** Material's 15 roles (`displayLarge … labelSmall`) + `…Emphasized`, in Satoshi; numeric roles `amountDisplay`,
+  `amountHeadline`, `amountTitle`, `amountBody`, `data` in Paper Mono. Old names alias: headline → headlineSmall,
+  title → titleLarge, subtitle → titleMedium, body → bodyLarge, label → labelLarge, amountHero/Large/Medium/Small →
+  amountDisplay/Headline/Title/Body. (Old `bodySmall` callers moved to `bodyMedium`.)
+- **Shape:** `radius.none 0 · extraSmall 4 · small 8 · medium 12 · large 16 · largeIncreased 20 · extraLarge 28 ·
+  extraLargeIncreased 32 · extraExtraLarge 48 · full`; old `xs…sheet` alias the same values.
+
+## Color: semantic roles (`HaloTheme.colors`, alias layer during 0006)
 Dark-first. Components reference **roles only**, never `HaloPalette`.
 
 | Role | Value | Use |

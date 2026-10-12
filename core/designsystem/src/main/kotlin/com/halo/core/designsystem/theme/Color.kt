@@ -147,6 +147,14 @@ class HaloStatusColors(
     val warningTint: Color,
 )
 
+/**
+ * Halo's colour roles, now a **migration alias layer** over Material 3's roles (proposal 0006, phase 1): every role
+ * below is derived from [scheme], which components should read directly as they migrate (`HaloTheme.scheme`).
+ * Mapping: bg.canvas → surface · bg.surface → surfaceContainer · bg.raised → surfaceContainerHigh ·
+ * content.primary/secondary/tertiary → onSurface / onSurfaceVariant / outline · line.subtle/default/strong →
+ * outlineVariant (half) / outlineVariant / outline · line.focus → primary · accent.fill → primaryContainer (the brand) ·
+ * accent.text → primary · networks: fill → family.fill (the seed), text → family.color, tint → family.container.
+ */
 @Immutable
 class HaloColors(
     val bg: HaloBackgroundColors,
@@ -160,144 +168,90 @@ class HaloColors(
     val lightning: HaloAccentColors,
     val status: HaloStatusColors,
     val isDark: Boolean,
-) {
-    /** These colours with other accent families (see [haloBrand]); [focus] is the focus ring's colour. */
-    fun copy(
-        accent: HaloAccentColors = this.accent,
-        bitcoin: HaloAccentColors = this.bitcoin,
-        lightning: HaloAccentColors = this.lightning,
-        focus: Color = line.focus,
-    ): HaloColors = HaloColors(
-        bg = bg,
-        content = content,
-        line = HaloLineColors(line.subtle, line.default, line.strong, focus, line.highlight),
-        accent = accent,
-        bitcoin = bitcoin,
-        lightning = lightning,
-        status = status,
-        isDark = isDark,
+    /** The Material 3 roles these colours are derived from. */
+    val scheme: HaloScheme,
+)
+
+/** The alias layer for [scheme] (see [HaloColors]). */
+fun HaloScheme.toHaloColors(): HaloColors {
+    val dark = isDark
+    fun meaning(f: HaloColorFamily, glow: Float) = HaloAccentColors(
+        fill = f.fill,
+        fillPressed = Tone.shift(f.fill, Tone.of(f.fill).l - PRESSED_TONE_STEP),
+        onFill = f.onFill,
+        text = f.color,
+        tint = f.container,
+        glow = f.fill.copy(alpha = glow),
+    )
+    val brand = primary.fill
+    val brandTone = Tone.of(brand)
+    return HaloColors(
+        bg = HaloBackgroundColors(
+            canvas = surface,
+            surface = surfaceContainer,
+            raised = surfaceContainerHigh,
+            glass = (if (dark) surfaceContainer else surfaceContainerLowest).copy(alpha = if (dark) GLASS_DARK else GLASS_LIGHT),
+            scrim = scrim.copy(alpha = if (dark) SCRIM_DARK else SCRIM_LIGHT),
+        ),
+        content = HaloContentColors(
+            primary = onSurface,
+            secondary = onSurfaceVariant,
+            tertiary = outline,
+            disabled = onSurface.copy(alpha = DISABLED_ALPHA),
+            inverse = inverseOnSurface,
+        ),
+        line = HaloLineColors(
+            subtle = outlineVariant.copy(alpha = SUBTLE_LINE),
+            default = outlineVariant,
+            strong = outline,
+            focus = primary.color,
+            highlight = HaloPalette.White.copy(alpha = if (dark) HIGHLIGHT_DARK else HIGHLIGHT_LIGHT),
+        ),
+        accent = HaloAccentColors(
+            fill = brand,
+            fillPressed = Tone.at(brandTone.h, brandTone.c, brandTone.l - PRESSED_TONE_STEP),
+            onFill = primary.onFill,
+            text = primary.color,
+            // A quiet selected background in the brand's hue (Material's tonal primary container).
+            tint = Tone.at(brandTone.h, minOf(brandTone.c, TINT_CHROMA), if (dark) TINT_TONE_DARK else TINT_TONE_LIGHT),
+            glow = brand.copy(alpha = if (dark) BRAND_GLOW_DARK else BRAND_GLOW_LIGHT),
+        ),
+        bitcoin = meaning(bitcoin, if (dark) NETWORK_GLOW_DARK else NETWORK_GLOW_LIGHT),
+        lightning = meaning(lightning, if (dark) NETWORK_GLOW_DARK else NETWORK_GLOW_LIGHT),
+        status = HaloStatusColors(
+            positive = positive.color,
+            positiveTint = positive.container,
+            negative = error.color,
+            negativeTint = error.container,
+            warning = warning.color,
+            warningTint = warning.container,
+        ),
+        isDark = dark,
+        scheme = this,
     )
 }
 
-fun haloDarkColors(): HaloColors = with(HaloPalette) {
-    HaloColors(
-        bg = HaloBackgroundColors(
-            canvas = Ink950,
-            surface = Ink850,
-            raised = Ink800,
-            glass = Ink700.copy(alpha = 0.72f),
-            scrim = Black.copy(alpha = 0.60f),
-        ),
-        content = HaloContentColors(
-            primary = Ink100,
-            secondary = Ink300,
-            tertiary = Ink400,
-            disabled = Ink500,
-            inverse = Ink950,
-        ),
-        line = HaloLineColors(
-            subtle = White.copy(alpha = 0.06f),
-            default = White.copy(alpha = 0.10f),
-            strong = White.copy(alpha = 0.16f),
-            focus = Blue400,
-            highlight = White.copy(alpha = 0.08f),
-        ),
-        accent = HaloAccentColors(
-            fill = Blue500,
-            fillPressed = Blue600,
-            onFill = White,
-            text = Blue400,
-            tint = Blue900,
-            glow = Blue500.copy(alpha = 0.30f),
-        ),
-        bitcoin = HaloAccentColors(
-            fill = Btc500,
-            fillPressed = Btc600,
-            onFill = Ink950,
-            text = Btc400,
-            tint = Btc900,
-            glow = Btc500.copy(alpha = 0.18f),
-        ),
-        lightning = HaloAccentColors(
-            fill = Yellow500,
-            fillPressed = Yellow550,
-            onFill = Ink950,
-            text = Yellow400,
-            tint = Yellow900,
-            glow = Yellow500.copy(alpha = 0.16f),
-        ),
-        status = HaloStatusColors(
-            positive = Green500,
-            positiveTint = Green900,
-            negative = Red500,
-            negativeTint = Red900,
-            warning = Coral500,
-            warningTint = Coral900,
-        ),
-        isDark = true,
-    )
-}
+/** Dark theme at [contrast], from [seeds] (Halo's own by default). */
+fun haloDarkColors(contrast: HaloContrast = HaloContrast.Standard, seeds: HaloSeeds = HaloSeeds.Halo): HaloColors =
+    haloScheme(dark = true, contrast = contrast, seeds = seeds).toHaloColors()
 
-/**
- * Light theme — matte ceramic. Contrast against `bg.canvas` (#EBEEF2): primary 16:1, secondary 6.7:1,
- * tertiary 3.6:1; accent/bitcoin/lightning `text` roles use deep stops (>= 4.5:1). Fills keep their brand
- * hue with ink on top.
- */
-fun haloLightColors(): HaloColors = with(HaloPalette) {
-    HaloColors(
-        bg = HaloBackgroundColors(
-            canvas = Ceramic100,
-            surface = Ceramic050,
-            raised = Ceramic000,
-            glass = Ceramic000.copy(alpha = 0.70f),
-            scrim = Slate950.copy(alpha = 0.32f),
-        ),
-        content = HaloContentColors(
-            primary = Slate950,
-            secondary = Slate700,
-            tertiary = Slate500,
-            disabled = Slate400,
-            inverse = Ceramic000,
-        ),
-        line = HaloLineColors(
-            subtle = Slate950.copy(alpha = 0.06f),
-            default = Slate950.copy(alpha = 0.10f),
-            strong = Slate950.copy(alpha = 0.16f),
-            focus = Blue600,
-            highlight = White.copy(alpha = 0.90f),
-        ),
-        accent = HaloAccentColors(
-            fill = Blue500,
-            fillPressed = Blue600,
-            onFill = White,
-            text = Blue600,
-            tint = Blue050,
-            glow = Blue500.copy(alpha = 0.28f),
-        ),
-        bitcoin = HaloAccentColors(
-            fill = Btc500,
-            fillPressed = Btc550,
-            onFill = Slate950,
-            text = Btc800,
-            tint = Btc050,
-            glow = Btc500.copy(alpha = 0.22f),
-        ),
-        lightning = HaloAccentColors(
-            fill = Yellow500,
-            fillPressed = Yellow600,
-            onFill = Slate950,
-            text = Yellow800,
-            tint = Yellow050,
-            glow = Yellow550.copy(alpha = 0.26f),
-        ),
-        status = HaloStatusColors(
-            positive = Green700,
-            positiveTint = Green050,
-            negative = Red700,
-            negativeTint = Red050,
-            warning = Coral700,
-            warningTint = Coral050,
-        ),
-        isDark = false,
-    )
-}
+/** Light theme at [contrast], from [seeds] (Halo's own by default). */
+fun haloLightColors(contrast: HaloContrast = HaloContrast.Standard, seeds: HaloSeeds = HaloSeeds.Halo): HaloColors =
+    haloScheme(dark = false, contrast = contrast, seeds = seeds).toHaloColors()
+
+private const val PRESSED_TONE_STEP = 8f
+private const val GLASS_DARK = 0.72f
+private const val GLASS_LIGHT = 0.70f
+private const val SCRIM_DARK = 0.60f
+private const val SCRIM_LIGHT = 0.32f
+private const val DISABLED_ALPHA = 0.38f
+private const val SUBTLE_LINE = 0.5f
+private const val HIGHLIGHT_DARK = 0.08f
+private const val HIGHLIGHT_LIGHT = 0.90f
+private const val TINT_TONE_DARK = 20f
+private const val TINT_TONE_LIGHT = 92f
+private const val TINT_CHROMA = 0.06f
+private const val BRAND_GLOW_DARK = 0.30f
+private const val BRAND_GLOW_LIGHT = 0.28f
+private const val NETWORK_GLOW_DARK = 0.18f
+private const val NETWORK_GLOW_LIGHT = 0.22f

@@ -14,22 +14,32 @@ import kotlin.math.pow
 import kotlin.math.sin
 
 /**
- * A host app's identity: its palettes for both themes and its two type families. Everything else (spacing, motion,
- * light, materials, haptics, sound) is the design system's and stays the same in every app.
+ * A host app's identity: the seeds its colour schemes are generated from (Material 3 roles, proposal 0006) and its
+ * two type families. Everything else (spacing, motion, light, materials, haptics, sound) is the design system's.
  *
  * Use [HaloBrand.Halo] for the Halo look, or [haloBrand] to derive a brand from one accent colour.
  */
 @Immutable
 class HaloBrand(
-    val dark: HaloColors,
-    val light: HaloColors,
+    val seeds: HaloSeeds = HaloSeeds.Halo,
     val fonts: HaloFonts = HaloFonts.Halo,
 ) {
-    fun colors(isDark: Boolean): HaloColors = if (isDark) dark else light
+    private val cache = HashMap<Pair<Boolean, HaloContrast>, HaloColors>()
+
+    /** The colours for one theme and contrast level (generated once, then cached). */
+    fun colors(isDark: Boolean, contrast: HaloContrast = HaloContrast.Standard): HaloColors = synchronized(cache) {
+        cache.getOrPut(isDark to contrast) { haloScheme(isDark, contrast, seeds).toHaloColors() }
+    }
+
+    /** Dark theme at standard contrast. */
+    val dark: HaloColors get() = colors(isDark = true)
+
+    /** Light theme at standard contrast. */
+    val light: HaloColors get() = colors(isDark = false)
 
     companion object {
         /** Halo's own brand: blue #2A67FF, Bitcoin orange, Lightning yellow, Satoshi and Paper Mono. */
-        val Halo: HaloBrand by lazy { HaloBrand(haloDarkColors(), haloLightColors()) }
+        val Halo: HaloBrand by lazy { HaloBrand() }
     }
 }
 
@@ -45,10 +55,9 @@ class HaloFonts(val sans: FontFamily, val mono: FontFamily) {
 }
 
 /**
- * A brand from seed colours. Each seed is the colour of a filled control in the dark theme; the other roles (pressed,
- * text, tint, glow, the light theme's deeper stops) are derived in OKLCH, keeping the seed's hue and checking contrast:
- * accent text reaches 4.5:1 on the canvas and the label on a fill reaches 4.5:1 too, in both themes. Neutrals, lines
- * and status colours stay Halo's.
+ * A brand from seed colours. The whole Material 3 scheme is generated from them (tones exactly Material's); the
+ * [accent] itself stays the key-action colour (primaryContainer), and the signal families keep their seeds as the
+ * fill of lit controls.
  *
  * @param accent every interactive UI accent (Halo: blue #2A67FF).
  * @param bitcoin the first signal family (Halo: on-chain Bitcoin). Null keeps Halo's.
@@ -60,16 +69,16 @@ fun haloBrand(
     lightning: Color? = null,
     fonts: HaloFonts = HaloFonts.Halo,
 ): HaloBrand {
-    fun HaloColors.rebrand(): HaloColors {
-        val a = haloAccent(accent, this)
-        return copy(
-            accent = a,
-            bitcoin = bitcoin?.let { haloAccent(it, this) } ?: this.bitcoin,
-            lightning = lightning?.let { haloAccent(it, this) } ?: this.lightning,
-            focus = if (isDark) a.fill else a.text,
-        )
-    }
-    return HaloBrand(haloDarkColors().rebrand(), haloLightColors().rebrand(), fonts)
+    val halo = HaloSeeds.Halo
+    val seeds = HaloSeeds(
+        brand = accent,
+        bitcoin = bitcoin ?: halo.bitcoin,
+        lightning = lightning ?: halo.lightning,
+        positive = halo.positive,
+        negative = halo.negative,
+        warning = halo.warning,
+    )
+    return HaloBrand(seeds, fonts)
 }
 
 /**

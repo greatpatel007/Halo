@@ -59,7 +59,7 @@ internal fun HoldToSendPage(viewModel: HoldToSendDemoViewModel = hiltViewModel()
         )
         state.error?.let {
             Spacer(Modifier.height(s.sm))
-            HaloText(it, style = t.bodySmall, color = colors.status.negative)
+            HaloText(it, style = t.bodyMedium, color = colors.status.negative)
         }
         Spacer(Modifier.height(s.xl))
         Knob(

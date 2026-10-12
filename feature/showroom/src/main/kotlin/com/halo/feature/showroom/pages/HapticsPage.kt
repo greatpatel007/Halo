@@ -84,7 +84,7 @@ internal fun HapticsPage() {
         Spacer(Modifier.height(s.md))
         HaloText(
             "Sound follows silent mode and the system touch-sounds setting. The emulator can't vibrate: every token also lands in the log (dock → log).",
-            style = HaloTheme.typography.bodySmall,
+            style = HaloTheme.typography.bodyMedium,
             color = HaloTheme.colors.content.secondary,
         )
     }

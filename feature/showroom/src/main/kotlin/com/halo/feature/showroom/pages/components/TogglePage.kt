@@ -50,7 +50,7 @@ internal fun TogglePage() {
                 Spacer(Modifier.height(s.xxs))
                 HaloText(
                     text = if (colors.isDark) "Soft-touch black · graphite thumb" else "Matte ceramic · white thumb",
-                    style = t.bodySmall,
+                    style = t.bodyMedium,
                     color = colors.content.secondary,
                 )
             }

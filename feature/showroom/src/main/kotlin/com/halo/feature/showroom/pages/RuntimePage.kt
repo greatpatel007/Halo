@@ -116,7 +116,7 @@ internal fun RuntimePage() {
         HaloText(
             "Try it: scroll the logo away, press Home, turn on battery saver, or simulate heat " +
                 "(adb shell cmd thermalservice override-status 3). Everything above follows.",
-            style = HaloTheme.typography.bodySmall,
+            style = HaloTheme.typography.bodyMedium,
             color = colors.content.secondary,
             modifier = Modifier.fillMaxWidth(),
         )
